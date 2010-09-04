@@ -1,4 +1,5 @@
 Current src/MyBot
+Basic bot/Basic # d0b29f9
 *Dual java -jar example_bots/DualBot.jar
 *Rage java -jar example_bots/RageBot.jar
 

@@ -116,6 +116,7 @@ def pretty_print_scores(scores, names):
 def get_bots(file):
     f = open(file, 'r')
     lines = f.readlines()
+    lines = [ line.split('#')[0] for line in lines ]
     parts = [line.split(None,1) for line in lines]
     names = [ p[0].strip() for p in parts if p ]
     bots = [ p[1].strip() for p in parts if p ]
