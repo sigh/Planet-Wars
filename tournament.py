@@ -2,6 +2,7 @@
 
 import subprocess
 import re
+import forkmap
 
 MAX_TURNS=1000
 PLAY_GAME="tools/PlayGame.jar"
@@ -10,20 +11,13 @@ BOT_FILE="bots.txt"
 
 MAP_PATH = 'maps/map%d.txt'
 
-def play_maps(maps,*players):
-    """plays players on maps and returns the score"""
-    scores = empty_score_matrix(len(players))
-    for map in maps:
-        (winner, score) = play_map(map, *players)
-        if winner != None:
-            for loser in (i for i in range(len(players)) if i != winner):
-                scores[winner][loser][0] += 1
-                scores[winner][loser][1] += score
-    return scores
+def run_games(games):
+    results = map( run_game, games )
+    return results
 
-def play_map(map_id, *players):
-    """plays players on map and returns the winner and the score"""
-    p = subprocess.Popen(['java', '-jar', PLAY_GAME, map_path(map_id), str(MAX_TURNS), str(MAX_TURNS), LOG ] + list(players), stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+def run_game(game):
+    (args, map_id, players) = game
+    p = subprocess.Popen( args, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
     (stdout, stderr) = p.communicate()
     lines = stderr.splitlines()
     match = re.match(r'^Player (\d+) Wins!$', lines[-1]);
@@ -32,23 +26,17 @@ def play_map(map_id, *players):
         moves = len(lines)-1
         print "Map %d: %s => %s (%d moves)" %( map_id, " vs ".join( players ), players[winner], moves )
 
-        return (winner, score(moves))
+        return (winner, moves)
     else:
         print "Map %d: %s => Draw" %( map_id, " vs ".join( players ))
         return (None,0)
 
-def empty_score_matrix(n):
-    scores = []
-    for i in range(n):
-        scores.append([[0,0]]*n)
-    return scores
+def generate_command(game, bots, names):
+    map_id = game['map']
+    players = [ bots[i] for i in game['players'] ]
+    args = ['java', '-jar', PLAY_GAME, map_path(map_id), str(MAX_TURNS), str(MAX_TURNS), LOG ] + players
 
-def combine_score_matrix(scores, new, *pos):
-    for i1, i2 in enumerate(pos):
-        for j1, j2 in enumerate(pos): 
-            scores[i2][j2][0] += new[i1][j1][0]
-            scores[i2][j2][1] += new[i1][j1][1]
-    return scores
+    return (args, map_id, [ names[i] for i in game['players'] ])
 
 def empty_score_matrix(n):
     scores = []
@@ -64,14 +52,23 @@ def map_path(map_id):
     return MAP_PATH %(map_id)
 
 def round_robin(maps, players):
-    scores = empty_score_matrix(len(players))
-    for i1, p1 in enumerate(players):
-        for i2, p2 in enumerate(players):
-            if p2 == p1:
+    games = []
+    for i in range(len(players)):
+        for j in range(len(players)):
+            if i == j:
                 continue
-            round_scores = play_maps(maps, p1, p2)
-            combine_score_matrix( scores, round_scores, i1, i2 )
-    return scores
+            games.extend( play_maps(maps, i, j) )
+    return games
+
+def play_maps(maps,*players):
+    """generate games to match players on given maps"""
+    games = []
+    for map in maps:
+        games.append({
+            'map': map,
+            'players': players
+        })
+    return games
 
 def score(turns):
     """determine the score based on the length of the game"""
@@ -85,6 +82,20 @@ def score(turns):
         return 4 
     else:
         return 5
+
+def generate_scores(results, games, names):
+    scores = empty_score_matrix(len(names))
+    lookup = dict((name, i) for i,name in enumerate(names))
+    for ((winner, moves), (args, map, players)) in zip(results, games):
+        if winner == None:
+            continue
+        s = score(moves)
+        winner = players[winner]
+        for loser in (p for p in players if p != winner):
+            scores[lookup[winner]][lookup[loser]][0] += 1
+            scores[lookup[winner]][lookup[loser]][1] += s
+
+    return scores
 
 def pretty_print_scores(scores, names):
     output = [[''] + names]
@@ -112,5 +123,7 @@ def get_bots(file):
 
 if __name__ == '__main__':
     (bots, names) = get_bots(BOT_FILE)
-    scores = round_robin(range(1,2), bots)
+    games = [ generate_command( game, bots, names ) for game in round_robin(range(1,2), bots) ]
+    results = run_games(games)
+    scores = generate_scores(results, games, names)
     pretty_print_scores(scores, names)
