@@ -32,12 +32,28 @@ void DoTurn(const PlanetWars& pw) {
   }
   // (3) Find the weakest enemy or neutral planet.
   int dest = -1;
-  double dest_score = -999999.0;
+  double dest_score = 999999.0;
   std::vector<Planet> not_my_planets = pw.NotMyPlanets();
   for (int i = 0; i < not_my_planets.size(); ++i) {
     const Planet& p = not_my_planets[i];
-    double score = ( 1.0 + p.GrowthRate()) / (1 + p.NumShips());
-    if (score > dest_score) {
+    double score;
+
+    // Estimate the number of days required to break even after capturing a planet
+    if ( p.Owner() ) { 
+        // For an enemy planet:
+        //   the number of days to travel to the planet 
+        //   + time to regain units on planet at start of flight
+        //   + time to regain units due to growth rate of enemy
+        //   - time to offset enemy units that will no longer be produced
+        score = ( (double)p.NumShips() / p.GrowthRate() + 3 * pw.Distance( p.PlanetID(), source)) / 2.0;
+    }
+    else {
+        // For a neutral planet:
+        //   the number of days to travel to the planet
+        //   + time to regain units spent
+        score = (double)p.NumShips() / p.GrowthRate() + pw.Distance( p.PlanetID(), source);
+    }
+    if (score < dest_score) {
       dest_score = score;
       dest = p.PlanetID();
     }
