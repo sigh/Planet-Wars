@@ -123,7 +123,7 @@ def get_bots(file):
 
 if __name__ == '__main__':
     (bots, names) = get_bots(BOT_FILE)
-    games = [ generate_command( game, bots, names ) for game in round_robin(range(1,2), bots) ]
+    games = [ generate_command( game, bots, names ) for game in round_robin(range(1,11), bots) ]
     results = run_games(games)
     scores = generate_scores(results, games, names)
     pretty_print_scores(scores, names)
