@@ -19,7 +19,7 @@ def play_maps(maps,*players):
     scores = empty_score_matrix(len(players))
     for map in maps:
         (winner, score) = play_map(map, *players)
-        if winner:
+        if winner != None:
             for loser in (i for i in range(len(players)) if i != winner):
                 scores[winner][loser][0] += 1
                 scores[winner][loser][1] += score
