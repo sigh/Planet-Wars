@@ -6,11 +6,7 @@ import re
 MAX_TURNS=1000
 PLAY_GAME="tools/PlayGame.jar"
 LOG="log.txt"
-
-EXAMPLE_BOTS=[
-    'java -jar example_bots/DualBot.jar',
-    'java -jar example_bots/RageBot.jar'
-]
+BOT_FILE="bots.txt"
 
 MAP_PATH = 'maps/map%d.txt'
 
@@ -90,13 +86,31 @@ def score(turns):
     else:
         return 5
 
-def pretty_print_scores(scores):
-    for row in scores:
+def pretty_print_scores(scores, names):
+    output = [[''] + names]
+
+    for i,row in enumerate(scores):
+        output_row = [names[i]] 
+        for j,col in enumerate(row):
+            output_row.append( "%d(%d)" %(col[0],col[1]) )
+        output.append(output_row)
+
+    width = max( len(x) for row in output for x in row )
+    format = "%"+str(width)+"s"
+    for row in output:
         for col in row:
-            print "%2d/%2d " %(col[0],col[1]),
-        
+            print format %(col),
         print ""
 
+def get_bots(file):
+    f = open(file, 'r')
+    lines = f.readlines()
+    parts = [line.split(None,1) for line in lines]
+    names = [ p[0].strip() for p in parts if p ]
+    bots = [ p[1].strip() for p in parts if p ]
+    return (bots, names)
+
 if __name__ == '__main__':
-    scores = round_robin(range(1,11), ['./bot/MyBot'] + EXAMPLE_BOTS)
-    pretty_print_scores(scores)
+    (bots, names) = get_bots(BOT_FILE)
+    scores = round_robin(range(1,2), bots)
+    pretty_print_scores(scores, names)
