@@ -1,4 +1,4 @@
-Current bot/MyBot
+Current src/MyBot
 *Dual java -jar example_bots/DualBot.jar
 *Rage java -jar example_bots/RageBot.jar
 
