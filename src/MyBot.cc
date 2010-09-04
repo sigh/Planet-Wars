@@ -1,5 +1,8 @@
 #include <iostream>
+#include <fstream>
 #include "PlanetWars.h"
+
+std::ofstream log_file("debug.log", std::ios::app);
 
 // The DoTurn function is where your code goes. The PlanetWars object contains
 // the state of the game, including information about all planets and fleets
@@ -12,10 +15,18 @@
 // own. Check out the tutorials and articles on the contest website at
 // http://www.ai-contest.com/resources.
 void DoTurn(const PlanetWars& pw) {
+  if ( 0 && pw.MyFleets().size() >= 1 ) {
+    Fleet f = pw.MyFleets()[0];
+    log_file << f.TotalTripLength() << " "
+                   << f.TurnsRemaining() << " "
+                   << pw.Distance( f.SourcePlanet(), f.DestinationPlanet() );
+  }
+
   // (1) If we currently have a fleet in flight, just do nothing.
   if (pw.MyFleets().size() >= 3) {
     return;
   }
+
   // (2) Find my strongest planet.
   int source = -1;
   double source_score = -999999.0;
@@ -23,47 +34,44 @@ void DoTurn(const PlanetWars& pw) {
   std::vector<Planet> my_planets = pw.MyPlanets();
   for (int i = 0; i < my_planets.size(); ++i) {
     const Planet& p = my_planets[i];
-    double score = (double)p.NumShips() / (1 + p.GrowthRate());
-    if (score > source_score) {
-      source_score = score;
-      source = p.PlanetID();
-      source_num_ships = p.NumShips();
-    }
-  }
-  // (3) Find the weakest enemy or neutral planet.
-  int dest = -1;
-  double dest_score = 999999.0;
-  std::vector<Planet> not_my_planets = pw.NotMyPlanets();
-  for (int i = 0; i < not_my_planets.size(); ++i) {
-    const Planet& p = not_my_planets[i];
-    double score;
+    source = p.PlanetID();
+    source_num_ships = p.NumShips();
 
-    // Estimate the number of days required to break even after capturing a planet
-    if ( p.Owner() ) { 
-        // For an enemy planet:
-        //   the number of days to travel to the planet 
-        //   + time to regain units on planet at start of flight
-        //   + time to regain units due to growth rate of enemy
-        //   - time to offset enemy units that will no longer be produced
-        score = ( (double)p.NumShips() / p.GrowthRate() + 3 * pw.Distance( p.PlanetID(), source)) / 2.0;
+      // (3) Find the weakest enemy or neutral planet.
+      int dest = -1;
+      double dest_score = 999999.0;
+      std::vector<Planet> not_my_planets = pw.NotMyPlanets();
+      for (int i = 0; i < not_my_planets.size(); ++i) {
+        const Planet& p = not_my_planets[i];
+        double score;
+
+        // Estimate the number of days required to break even after capturing a planet
+        if ( p.Owner() ) { 
+            // For an enemy planet:
+            //   the number of days to travel to the planet 
+            //   + time to regain units on planet at start of flight
+            //   + time to regain units due to growth rate of enemy
+            //   - time to offset enemy units that will no longer be produced
+            score = ( (double)p.NumShips() / p.GrowthRate() + 3 * pw.Distance( p.PlanetID(), source)) / 2.0;
+        }                                                                                             
+        else {
+            // For a neutral planet:
+            //   the number of days to travel to the planet
+            //   + time to regain units spent
+            score = (double)p.NumShips() / p.GrowthRate() + pw.Distance( p.PlanetID(), source);
+        }
+        if (score < dest_score) {
+          dest_score = score;
+          dest = p.PlanetID();
+        }
+      }
+      // (4) Send half the ships from my strongest planet to the weakest
+      // planet that I do not own.
+      if (source >= 0 && dest >= 0) {
+        int num_ships = source_num_ships;
+        pw.IssueOrder(source, dest, num_ships);
+      }
     }
-    else {
-        // For a neutral planet:
-        //   the number of days to travel to the planet
-        //   + time to regain units spent
-        score = (double)p.NumShips() / p.GrowthRate() + pw.Distance( p.PlanetID(), source);
-    }
-    if (score < dest_score) {
-      dest_score = score;
-      dest = p.PlanetID();
-    }
-  }
-  // (4) Send half the ships from my strongest planet to the weakest
-  // planet that I do not own.
-  if (source >= 0 && dest >= 0) {
-    int num_ships = source_num_ships / 2;
-    pw.IssueOrder(source, dest, num_ships);
-  }
 }
 
 // This is just the main game loop that takes care of communicating with the
@@ -86,5 +94,6 @@ int main(int argc, char *argv[]) {
       current_line = "";
     }
   }
+  log_file.close();
   return 0;
 }
