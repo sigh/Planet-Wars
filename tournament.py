@@ -12,7 +12,7 @@ BOT_FILE="bots.txt"
 MAP_PATH = 'maps/map%d.txt'
 
 def run_games(games):
-    results = map( run_game, games )
+    results = forkmap.map( run_game, games )
     return results
 
 def run_game(game):
