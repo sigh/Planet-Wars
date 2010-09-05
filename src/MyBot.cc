@@ -22,10 +22,12 @@ void DoTurn(const PlanetWars& pw) {
                    << pw.Distance( f.SourcePlanet(), f.DestinationPlanet() );
   }
 
-  // (1) If we currently have a fleet in flight, just do nothing.
-  if (pw.MyFleets().size() >= 3) {
-    return;
-  }
+
+    std::vector<Planet> not_my_planets = pw.NotMyPlanets();
+    for (int i = 0; i < not_my_planets.size(); ++i) {
+        const Planet& p = not_my_planets[i];
+    }
+
 
   // (2) Find my strongest planet.
   int source = -1;
