@@ -7,7 +7,7 @@ import forkmap
 MAX_TURNS=1000
 PLAY_GAME="tools/PlayGame.jar"
 LOG="log.txt"
-BOT_FILE="bots.txt"
+BOT_FILE="tournament/bots.txt"
 
 MAP_PATH = 'maps/map%d.txt'
 
