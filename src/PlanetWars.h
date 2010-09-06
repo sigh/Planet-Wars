@@ -11,6 +11,8 @@
 
 #include "model/Planet.h"
 
+class Planet;
+
 // This is a utility class that parses strings.
 class StringUtil {
  public:

@@ -1,17 +1,23 @@
+#include "../PlanetWars.h"
 #include "Planet.h"
 
-Planet::Planet(int planet_id,
-               int owner,
-               int num_ships,
-               int growth_rate,
-               double x,
-               double y) {
+Planet::Planet(
+    const PlanetWars* pw,
+    int planet_id,
+    int owner,
+    int num_ships,
+    int growth_rate,
+    double x,
+    double y
+) {
     planet_id_ = planet_id;
     owner_ = owner;
     num_ships_ = num_ships;
     growth_rate_ = growth_rate;
     x_ = x;
     y_ = y;
+    pw_ = pw;
+    incoming_.clear();
 }
 
 int Planet::PlanetID() const {
@@ -52,6 +58,22 @@ void Planet::AddShips(int amount) {
 
 void Planet::RemoveShips(int amount) {
     num_ships_ -= amount;
+}
+
+// compare fleets by distance from planet
+struct CompareFleets {
+    const PlanetWars *pw_;
+    CompareFleets(const PlanetWars *pw) { pw_ = pw; }
+
+    bool operator()(int lhs, int rhs) const {
+        return pw_->GetFleet(lhs).TurnsRemaining() < pw_->GetFleet(rhs).TurnsRemaining();
+    }
+};
+
+void Planet::AddIncomingFleet(int fleet) {
+    incoming_.push_back(fleet);
+
+    sort(incoming_.begin(), incoming_.end(), CompareFleets(pw_));
 }
 
 
