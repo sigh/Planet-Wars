@@ -27,6 +27,8 @@ void DoTurn(const PlanetWars& pw) {
     return;
   }
 
+  std::vector<Fleet> my_fleets = pw.MyFleets();
+
   // (2) Find my strongest planet.
   int source = -1;
   double source_score = -999999.0;
@@ -44,6 +46,18 @@ void DoTurn(const PlanetWars& pw) {
       for (int i = 0; i < not_my_planets.size(); ++i) {
         const Planet& p = not_my_planets[i];
         double score;
+
+        // Don't send ships to this planet if we have already started attacking it
+        bool is_attacked = false;
+        for ( int f=0; f < my_fleets.size(); ++f) {
+            if ( my_fleets[f].DestinationPlanet() == p.PlanetID() ) {
+                is_attacked = true;
+                break;
+            }
+        }
+        if ( is_attacked ) {
+            continue;
+        }
 
         // Estimate the number of days required to break even after capturing a planet
         if ( p.Owner() ) { 
@@ -65,10 +79,27 @@ void DoTurn(const PlanetWars& pw) {
           dest = p.PlanetID();
         }
       }
+
+      // determine the number of ships required to take over the planet
+      int required_ships;
+
+      const Planet &p_dest = pw.GetPlanet(dest);
+      if ( p_dest.Owner() ) {
+        required_ships = (p_dest.NumShips() + pw.Distance( dest, source ) * p_dest.GrowthRate()) + 3;
+      }
+      else {
+        required_ships = p_dest.NumShips() + 3;  
+      }
+
+      // ensure that we have enough ships to take over the planet.
+      if ( required_ships > (int)(source_num_ships * 0.75) ) {
+        continue;
+      }
+
       // (4) Send half the ships from my strongest planet to the weakest
       // planet that I do not own.
       if (source >= 0 && dest >= 0) {
-        int num_ships = source_num_ships;
+        int num_ships = required_ships;
         pw.IssueOrder(source, dest, num_ships);
       }
     }
