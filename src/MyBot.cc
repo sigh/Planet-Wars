@@ -22,12 +22,10 @@ void DoTurn(const PlanetWars& pw) {
                    << pw.Distance( f.SourcePlanet(), f.DestinationPlanet() );
   }
 
-
-    std::vector<Planet> not_my_planets = pw.NotMyPlanets();
-    for (int i = 0; i < not_my_planets.size(); ++i) {
-        const Planet& p = not_my_planets[i];
-    }
-
+  // (1) If we currently have a fleet in flight, just do nothing.
+  if (pw.MyFleets().size() >= 3) {
+    return;
+  }
 
   std::vector<Fleet> my_fleets = pw.MyFleets();
 
