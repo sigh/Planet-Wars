@@ -1,6 +1,8 @@
 #include "../PlanetWars.h"
 #include "Planet.h"
 
+#include <algorithm>
+
 Planet::Planet(
     const PlanetWars* pw,
     int planet_id,
