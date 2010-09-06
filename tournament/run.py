@@ -19,12 +19,9 @@ conn = sqlite3.connect(DB_FILE)
 def run_games(games):
     c = conn.cursor()
 
-    # reset current
-    c.execute("""
-        DELETE FROM results
-        WHERE bot_1 == 'Current'
-        OR    bot_2 == 'Current'
-    """)
+    # We want all games for current bot to be rerun
+    # TODO: Check timestamp to determine when current has been updated
+    clear_results('Current')
     
     results = cached_results(games)
 
@@ -50,6 +47,18 @@ def run_games(games):
     conn.commit()
 
     return cached_results(games)
+
+def clear_results(bot):
+    # clear results for bot
+    c = conn.cursor()
+    c.execute("""
+            DELETE FROM results
+            WHERE bot_1 == ?
+            OR    bot_2 == ?
+        """,
+        ( bot, bot)
+    )
+    conn.commit()
 
 def cached_results(games):
     c = conn.cursor()
@@ -162,9 +171,23 @@ def pretty_print_scores(scores, names):
 
     for i,row in enumerate(scores):
         output_row = [names[i]] 
+        row_total = [0,0]
         for j,col in enumerate(row):
-            output_row.append( "%d(%d)" %(col[0],col[1]) )
+            output_row.append( "%d(%d)" %(col[0], col[1]))
+            row_total[0] += col[0]
+            row_total[1] += col[1]
+        output_row.append("%d(%d)" %(row_total[0], row_total[1]))
+
         output.append(output_row)
+
+    # column totals
+    col_totals = ['']
+    for i in range(len(names)):
+        col_totals.append("%d(%d)" %(
+            sum( s[i][0] for s in scores ),
+            sum( s[i][1] for s in scores ),
+        ))
+    output.append(col_totals)
 
     width = max( len(x) for row in output for x in row )
     format = "%"+str(width)+"s"
