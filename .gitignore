@@ -1,0 +1,10 @@
+# Current exe
+src/MyBot
+
+# object files
+*.o
+
+# log files
+*.log
+log.txt
+
