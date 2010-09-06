@@ -233,8 +233,10 @@ int PlanetWars::ParseGameState(const std::string& s) {
       if (tokens.size() != 6) {
         return 0;
       }
-      Planet p(planet_id++,              // The ID of this planet
-	       atoi(tokens[3].c_str()),  // Owner
+      Planet p(
+               this,
+               planet_id++,              // The ID of this planet
+               atoi(tokens[3].c_str()),  // Owner
                atoi(tokens[4].c_str()),  // Num ships
                atoi(tokens[5].c_str()),  // Growth rate
                atof(tokens[1].c_str()),  // X
@@ -255,6 +257,12 @@ int PlanetWars::ParseGameState(const std::string& s) {
       return 0;
     }
   }
+
+  // inform planets about fleets
+  for (int i = 0; i < fleets_.size(); ++i) {
+      planets_[ fleets_[i].DestinationPlanet() ].AddIncomingFleet(i);
+  }
+
   return 1;
 }
 

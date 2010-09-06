@@ -1,17 +1,25 @@
 #ifndef PLANET_H_
 #define PLANET_H_
 
+#include "../PlanetWars.h"
+
+class PlanetWars;
+class Fleet;
+
 // Stores information about one planet. There is one instance of this class
 // for each planet on the map.
 class Planet {
  public:
     // Initializes a planet.
-    Planet(int planet_id,
-           int owner,
-           int num_ships,
-           int growth_rate,
-           double x,
-           double y);
+    Planet( 
+        const PlanetWars* pw,
+        int planet_id,
+        int owner,
+        int num_ships,
+        int growth_rate,
+        double x,
+        double y
+    );
 
     // Returns the ID of this planets. Planets are numbered starting at zero.
     int PlanetID() const;
@@ -43,12 +51,17 @@ class Planet {
     void AddShips(int amount);
     void RemoveShips(int amount);
 
+    void AddIncomingFleet(int fleet);
+
  private:
     int planet_id_;
     int owner_;
     int num_ships_;
     int growth_rate_;
     double x_, y_;
+    const PlanetWars* pw_;
+
+    std::vector<int> incoming_;
 };
 
 #endif
