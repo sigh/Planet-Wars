@@ -3,6 +3,7 @@
 import subprocess
 import re
 import forkmap
+import sqlite3
 
 MAX_TURNS=1000
 PLAY_GAME="tools/PlayGame.jar"
@@ -11,9 +12,68 @@ BOT_FILE="tournament/bots.txt"
 
 MAP_PATH = 'maps/map%d.txt'
 
+DB_FILE = 'tournament/db'
+
+conn = sqlite3.connect(DB_FILE)
+
 def run_games(games):
-    results = forkmap.map( run_game, games )
-    return results
+    c = conn.cursor()
+
+    # reset current
+    c.execute("""
+        DELETE FROM results
+        WHERE bot_1 == 'Current'
+        OR    bot_2 == 'Current'
+    """)
+    
+    results = cached_results(games)
+
+    # get the games that don't have a result
+    new_games = [ g for g,r in zip(games, results) if r == None ]
+
+    # run the tournament for the new games only
+    new_results = forkmap.map( run_game, new_games )
+
+    # update results in the db
+    for ((winner, moves), (args, map, players)) in zip(new_results, new_games):
+        c.execute(
+            "REPLACE INTO results VALUES ( ?, ?, ?, ?, ?, ? )",
+            (
+                players[0],
+                players[1],
+                map,
+                MAX_TURNS,
+                winner,
+                moves
+            )
+        )
+    conn.commit()
+
+    return cached_results(games)
+
+def cached_results(games):
+    c = conn.cursor()
+    
+    results = []
+    # lookup if we already have result
+    for i, (args, map, players) in enumerate(games):
+        c.execute("""
+            SELECT winner, moves FROM results WHERE
+                bot_1 = ?
+            AND bot_2 = ?
+            AND map   = ?
+            AND move_limit = ?
+            """,
+            (
+                players[0],
+                players[1],
+                map,
+                MAX_TURNS
+            )
+        )
+        results.append(c.fetchone())
+
+    return results 
 
 def run_game(game):
     (args, map_id, players) = game
@@ -124,7 +184,8 @@ def get_bots(file):
 
 if __name__ == '__main__':
     (bots, names) = get_bots(BOT_FILE)
-    games = [ generate_command( game, bots, names ) for game in round_robin(range(1,6), bots) ]
+    games = [ generate_command( game, bots, names ) for game in round_robin(range(1,3), bots) ]
     results = run_games(games)
     scores = generate_scores(results, games, names)
     pretty_print_scores(scores, names)
+    conn.close()

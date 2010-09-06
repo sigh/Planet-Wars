@@ -1,7 +1,7 @@
 Current src/MyBot
 Basic   bot/Basic  # d0b29f9
-Rage    bot/Rage   # 10b1547
+#Rage    bot/Rage   # 10b1547
 Stingy  bot/Stingy # a9c660d
-*Dual java -jar example_bots/DualBot.jar
-*Rage java -jar example_bots/RageBot.jar
+#*Dual java -jar example_bots/DualBot.jar
+#*Rage java -jar example_bots/RageBot.jar
 
