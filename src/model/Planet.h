@@ -6,6 +6,11 @@
 class PlanetWars;
 class Fleet;
 
+struct PlanetState {
+    int owner;
+    int ships;
+};
+
 // Stores information about one planet. There is one instance of this class
 // for each planet on the map.
 class Planet {
@@ -52,6 +57,7 @@ class Planet {
     void RemoveShips(int amount);
 
     void AddIncomingFleet(int fleet);
+    PlanetState Projection(int days);
 
  private:
     int planet_id_;
@@ -62,6 +68,10 @@ class Planet {
     const PlanetWars* pw_;
 
     std::vector<int> incoming_;
+    std::vector<PlanetState> projection_;
+    bool update_projection_;
+
+    void UpdateProjection();
 };
 
 #endif
