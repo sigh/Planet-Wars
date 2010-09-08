@@ -6,6 +6,9 @@
 class PlanetWars;
 class Fleet;
 
+// my ships, enemy ships
+typedef std::pair<int, int> FleetSummary;
+// owner, ships
 struct PlanetState {
     int owner;
     int ships;
@@ -56,8 +59,8 @@ class Planet {
     void AddShips(int amount);
     void RemoveShips(int amount);
 
-    void AddIncomingFleet(int fleet);
-    PlanetState Projection(int days);
+    void AddIncomingFleet(const Fleet& fleet);
+    PlanetState Projection(int days) const;
 
  private:
     int planet_id_;
@@ -67,11 +70,11 @@ class Planet {
     double x_, y_;
     const PlanetWars* pw_;
 
-    std::vector<int> incoming_;
-    std::vector<PlanetState> projection_;
-    bool update_projection_;
+    std::vector<FleetSummary> incoming_fleets_;
+    mutable std::vector<PlanetState> projection_;
+    mutable bool update_projection_;
 
-    void UpdateProjection();
+    void UpdateProjection() const;
 };
 
 #endif

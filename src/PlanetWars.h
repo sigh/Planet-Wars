@@ -12,6 +12,11 @@
 #include "model/Planet.h"
 #include "model/Fleet.h"
 
+// TODO: Remove this
+#include <iostream>
+#include <fstream>
+extern std::ofstream log_file;
+
 class Planet;
 
 // This is a utility class that parses strings.

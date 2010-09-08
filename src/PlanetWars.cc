@@ -222,7 +222,8 @@ int PlanetWars::ParseGameState(const std::string& s) {
 
   // inform planets about fleets
   for (int i = 0; i < fleets_.size(); ++i) {
-      planets_[ fleets_[i].DestinationPlanet() ].AddIncomingFleet(i);
+      const Fleet& fleet = fleets_[i];
+      planets_[ fleet.DestinationPlanet() ].AddIncomingFleet(fleet);
   }
 
   return 1;
