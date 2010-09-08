@@ -22,11 +22,6 @@ void DoTurn(const PlanetWars& pw) {
                    << pw.Distance( f.SourcePlanet(), f.DestinationPlanet() );
   }
 
-  // (1) If we currently have a fleet in flight, just do nothing.
-  if (pw.MyFleets().size() >= 3) {
-    return;
-  }
-
   std::vector<Fleet> my_fleets = pw.MyFleets();
 
   // (2) Find my strongest planet.
@@ -60,19 +55,24 @@ void DoTurn(const PlanetWars& pw) {
         }
 
         // Estimate the number of days required to break even after capturing a planet
-        if ( p.Owner() ) { 
+        int days = pw.Distance( p.PlanetID(), source );
+        PlanetState projection = p.Projection( days );
+        if ( projection.owner == 1 ) { 
+            continue;
+        }
+        else if ( projection.owner ) { 
             // For an enemy planet:
             //   the number of days to travel to the planet 
             //   + time to regain units on planet at start of flight
             //   + time to regain units due to growth rate of enemy
             //   - time to offset enemy units that will no longer be produced
-            score = ( (double)p.NumShips() / p.GrowthRate() + 3 * pw.Distance( p.PlanetID(), source)) / 2.0;
+            score = (double)projection.ships/p.GrowthRate()/2.0 + days;
         }                                                                                             
         else {
             // For a neutral planet:
             //   the number of days to travel to the planet
             //   + time to regain units spent
-            score = (double)p.NumShips() / p.GrowthRate() + pw.Distance( p.PlanetID(), source);
+            score = (double)projection.ships/p.GrowthRate() + days;
         }
         if (score < dest_score) {
           dest_score = score;
@@ -80,28 +80,22 @@ void DoTurn(const PlanetWars& pw) {
         }
       }
 
-      // determine the number of ships required to take over the planet
-      int required_ships;
-
-      const Planet &p_dest = pw.GetPlanet(dest);
-      if ( p_dest.Owner() ) {
-        required_ships = (p_dest.NumShips() + pw.Distance( dest, source ) * p_dest.GrowthRate()) + 3;
-      }
-      else {
-        required_ships = p_dest.NumShips() + 3;  
-      }
-
-      // ensure that we have enough ships to take over the planet.
-      if ( required_ships > (int)(source_num_ships * 0.75) ) {
-        continue;
-      }
-
-      // (4) Send half the ships from my strongest planet to the weakest
-      // planet that I do not own.
       if (source >= 0 && dest >= 0) {
-        int num_ships = required_ships;
-        pw.IssueOrder(source, dest, num_ships);
-      }
+          // determine the number of ships required to take over the planet
+
+          const Planet &p_dest = pw.GetPlanet(dest);
+            int required_ships = p_dest.Projection(pw.Distance( dest, source )).ships + 3;
+
+          // ensure that we have enough ships to take over the planet.
+          if ( required_ships > (int)(source_num_ships * 0.75) ) {
+            continue;
+          }
+
+          // (4) Send half the ships from my strongest planet to the weakest
+          // planet that I do not own.
+            int num_ships = required_ships;
+            pw.IssueOrder(source, dest, num_ships);
+          }
     }
 }
 
