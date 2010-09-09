@@ -45,7 +45,7 @@ class PlanetWars {
 
   // Returns the planet with the given planet_id. There are NumPlanets()
   // planets. They are numbered starting at 0.
-  const Planet& GetPlanet(int planet_id) const;
+  Planet& GetPlanet(int planet_id);
 
   // Returns the number of fleets.
   int NumFleets() const;

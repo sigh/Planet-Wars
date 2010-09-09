@@ -14,7 +14,7 @@ std::ofstream log_file("debug.log", std::ios::app);
 // starting point, or you can throw it out entirely and replace it with your
 // own. Check out the tutorials and articles on the contest website at
 // http://www.ai-contest.com/resources.
-void DoTurn(const PlanetWars& pw) {
+void DoTurn(PlanetWars& pw) {
   if ( 0 && pw.MyFleets().size() >= 1 ) {
     Fleet f = pw.MyFleets()[0];
     log_file << f.TotalTripLength() << " "
@@ -23,6 +23,15 @@ void DoTurn(const PlanetWars& pw) {
   }
 
   std::vector<Fleet> my_fleets = pw.MyFleets();
+
+  // defence
+  std::vector<Fleet> enemy_fleets = pw.EnemyFleets();
+  for ( int i=0; i < enemy_fleets.size(); ++i ) {
+    Planet& dest = pw.GetPlanet(enemy_fleets[i].DestinationPlanet());
+    if ( dest.Owner() == 1 ) {
+        dest.RemoveShips( enemy_fleets[i].NumShips() );
+    }
+  }
 
   // (2) Find my strongest planet.
   int source = -1;
@@ -37,7 +46,7 @@ void DoTurn(const PlanetWars& pw) {
       // (3) Find the weakest enemy or neutral planet.
       int dest = -1;
       double dest_score = 999999.0;
-      std::vector<Planet> not_my_planets = pw.NotMyPlanets();
+      std::vector<Planet> not_my_planets = pw.NotMyPlanets(); // TODO: Use projected ownership instead
       for (int i = 0; i < not_my_planets.size(); ++i) {
         const Planet& p = not_my_planets[i];
         double score;

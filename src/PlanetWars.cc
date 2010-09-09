@@ -33,7 +33,7 @@ int PlanetWars::NumPlanets() const {
   return planets_.size();
 }
 
-const Planet& PlanetWars::GetPlanet(int planet_id) const {
+Planet& PlanetWars::GetPlanet(int planet_id) {
   return planets_[planet_id];
 }
 
