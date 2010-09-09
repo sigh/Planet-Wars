@@ -139,30 +139,16 @@ def play_maps(maps,*players):
         })
     return games
 
-def score(turns):
-    """determine the score based on the length of the game"""
-    if turns >= MAX_TURNS:
-        return 1
-    elif turns >= 500:
-        return 2
-    elif turns >= 200:
-        return 3 
-    elif turns >= 100:
-        return 4 
-    else:
-        return 5
-
 def generate_scores(results, games, names):
     scores = empty_score_matrix(len(names))
     lookup = dict((name, i) for i,name in enumerate(names))
     for ((winner, moves), (args, map, players)) in zip(results, games):
         if winner == None:
             continue
-        s = score(moves)
         winner = players[winner]
         for loser in (p for p in players if p != winner):
             scores[lookup[winner]][lookup[loser]][0] += 1
-            scores[lookup[winner]][lookup[loser]][1] += s
+            scores[lookup[winner]][lookup[loser]][1] += moves
 
     return scores
 
@@ -173,20 +159,20 @@ def pretty_print_scores(scores, names):
         output_row = [names[i]] 
         row_total = [0,0]
         for j,col in enumerate(row):
-            output_row.append( "%d(%d)" %(col[0], col[1]))
+            output_row.append( score_string(col) )
             row_total[0] += col[0]
             row_total[1] += col[1]
-        output_row.append("%d(%d)" %(row_total[0], row_total[1]))
+        output_row.append( score_string( row_total ) )
 
         output.append(output_row)
 
     # column totals
     col_totals = ['']
     for i in range(len(names)):
-        col_totals.append("%d(%d)" %(
+        col_totals.append(score_string((
             sum( s[i][0] for s in scores ),
             sum( s[i][1] for s in scores ),
-        ))
+        )))
     output.append(col_totals)
 
     width = max( len(x) for row in output for x in row )
@@ -195,6 +181,12 @@ def pretty_print_scores(scores, names):
         for col in row:
             print format %(col),
         print ""
+
+def score_string(score):
+    if score[0]:
+        return "%d(%d)" %(score[0], score[1]/score[0])
+    else:
+        return "0(0)"
 
 def get_bots(file):
     f = open(file, 'r')

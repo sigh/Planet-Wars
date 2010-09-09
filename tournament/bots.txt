@@ -1,9 +1,9 @@
-Current src/MyBot
+# Current src/MyBot
 Basic   bot/Basic   # d0b29f9
 Rage    bot/Rage    # 10b1547
 Stingy  bot/Stingy  # a9c660d
 PSimple bot/PSimple # 8474e87
 # PSimple2 bot/PSimple2 #27a1456
-PSimple3 bot/PSimple3 #
+# PSimple3 bot/PSimple3 # bb86fdb
 *Rage java -jar example_bots/RageBot.jar
 
