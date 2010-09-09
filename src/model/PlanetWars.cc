@@ -153,9 +153,22 @@ int PlanetWars::Distance(int source_planet, int destination_planet) const {
     return (int)ceil(sqrt(dx * dx + dy * dy));
 }
 
-void PlanetWars::IssueOrder(int source_planet,
+void PlanetWars::IssueOrder(
+        int source_planet,
         int destination_planet,
-        int num_ships) const {
+        int num_ships) {
+    planets_[source_planet].RemoveShips( num_ships );
+    planets_[destination_planet].AddIncomingFleet(
+        Fleet(
+            1,
+            num_ships, 
+            source_planet,
+            destination_planet,
+            Distance( source_planet, destination_planet ),
+            Distance( source_planet, destination_planet )
+        )
+    );
+
     std::cout << source_planet << " "
         << destination_planet << " "
         << num_ships << std::endl;
