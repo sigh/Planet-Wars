@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include "PlanetWars.h"
+#include "model/PlanetWars.h"
 
 std::ofstream log_file("debug.log", std::ios::app);
 

@@ -1,4 +1,3 @@
-#include "../PlanetWars.h"
 #include "Planet.h"
 
 #include <algorithm>

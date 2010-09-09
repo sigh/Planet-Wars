@@ -1,7 +1,7 @@
 #ifndef PLANET_H_
 #define PLANET_H_
 
-#include "../PlanetWars.h"
+#include "PlanetWars.h"
 
 class PlanetWars;
 class Fleet;
