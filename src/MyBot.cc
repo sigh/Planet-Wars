@@ -25,13 +25,13 @@ void DoTurn(PlanetWars& pw, int turn_number) {
   std::vector<Fleet> my_fleets = pw.MyFleets();
 
   // defence
-  // std::vector<Fleet> enemy_fleets = pw.EnemyFleets();
-  // for ( int i=0; i < enemy_fleets.size(); ++i ) {
-  //   Planet& dest = pw.GetPlanet(enemy_fleets[i].DestinationPlanet());
-  //   if ( dest.Owner() == 1 ) {
-  //       dest.RemoveShips( enemy_fleets[i].NumShips() );
-  //   }
-  // }
+  std::vector<Fleet> enemy_fleets = pw.EnemyFleets();
+  for ( int i=0; i < enemy_fleets.size(); ++i ) {
+    Planet& dest = pw.GetPlanet(enemy_fleets[i].DestinationPlanet());
+    if ( dest.Owner() == 1 ) {
+        dest.RemoveShips( enemy_fleets[i].NumShips() );
+    }
+  }
 
   // (2) Find my strongest planet.
   int source = -1;
