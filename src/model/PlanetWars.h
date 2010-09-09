@@ -98,7 +98,7 @@ class PlanetWars {
         // that planet.
         void IssueOrder(int source_planet,
                 int destination_planet,
-                int num_ships) const;
+                int num_ships);
 
         // Returns true if the named player owns at least one planet or fleet.
         // Otherwise, the player is deemed to be dead and false is returned.

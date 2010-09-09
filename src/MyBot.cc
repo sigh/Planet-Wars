@@ -14,7 +14,7 @@ std::ofstream log_file("debug.log", std::ios::app);
 // starting point, or you can throw it out entirely and replace it with your
 // own. Check out the tutorials and articles on the contest website at
 // http://www.ai-contest.com/resources.
-void DoTurn(PlanetWars& pw) {
+void DoTurn(PlanetWars& pw, int turn_number) {
   if ( 0 && pw.MyFleets().size() >= 1 ) {
     Fleet f = pw.MyFleets()[0];
     log_file << f.TotalTripLength() << " "
@@ -25,13 +25,13 @@ void DoTurn(PlanetWars& pw) {
   std::vector<Fleet> my_fleets = pw.MyFleets();
 
   // defence
-  std::vector<Fleet> enemy_fleets = pw.EnemyFleets();
-  for ( int i=0; i < enemy_fleets.size(); ++i ) {
-    Planet& dest = pw.GetPlanet(enemy_fleets[i].DestinationPlanet());
-    if ( dest.Owner() == 1 ) {
-        dest.RemoveShips( enemy_fleets[i].NumShips() );
-    }
-  }
+  // std::vector<Fleet> enemy_fleets = pw.EnemyFleets();
+  // for ( int i=0; i < enemy_fleets.size(); ++i ) {
+  //   Planet& dest = pw.GetPlanet(enemy_fleets[i].DestinationPlanet());
+  //   if ( dest.Owner() == 1 ) {
+  //       dest.RemoveShips( enemy_fleets[i].NumShips() );
+  //   }
+  // }
 
   // (2) Find my strongest planet.
   int source = -1;
@@ -52,16 +52,16 @@ void DoTurn(PlanetWars& pw) {
         double score;
 
         // Don't send ships to this planet if we have already started attacking it
-        bool is_attacked = false;
-        for ( int f=0; f < my_fleets.size(); ++f) {
-            if ( my_fleets[f].DestinationPlanet() == p.PlanetID() ) {
-                is_attacked = true;
-                break;
-            }
-        }
-        if ( is_attacked ) {
-            continue;
-        }
+        // bool is_attacked = false;
+        // for ( int f=0; f < my_fleets.size(); ++f) {
+        //     if ( my_fleets[f].DestinationPlanet() == p.PlanetID() ) {
+        //         is_attacked = true;
+        //         break;
+        //     }
+        // }
+        // if ( is_attacked ) {
+        //     continue;
+        // }
 
         // Estimate the number of days required to break even after capturing a planet
         int days = pw.Distance( p.PlanetID(), source );
@@ -113,14 +113,16 @@ void DoTurn(PlanetWars& pw) {
 int main(int argc, char *argv[]) {
   std::string current_line;
   std::string map_data;
+  int turn_number = 0;
   while (true) {
     int c = std::cin.get();
     current_line += (char)c;
     if (c == '\n') {
       if (current_line.length() >= 2 && current_line.substr(0, 2) == "go") {
+          ++turn_number;
         PlanetWars pw(map_data);
         map_data = "";
-        DoTurn(pw);
+        DoTurn(pw, turn_number);
 	pw.FinishTurn();
       } else {
         map_data += current_line;

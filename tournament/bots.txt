@@ -3,6 +3,6 @@ Basic   bot/Basic   # d0b29f9
 Rage    bot/Rage    # 10b1547
 Stingy  bot/Stingy  # a9c660d
 PSimple bot/PSimple # 8474e87
-*Dual java -jar example_bots/DualBot.jar
+PSimple2 bot/PSimple2 #
 *Rage java -jar example_bots/RageBot.jar
 
