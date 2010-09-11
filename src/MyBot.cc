@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
-#include "model/PlanetWars.h"
+#include "PlanetWars.h"
 
 std::pair<int, int> BreakEven() {
     int ships_to_send;

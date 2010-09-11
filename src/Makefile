@@ -3,6 +3,6 @@ CC=g++
 all: MyBot
 
 clean:
-	rm -rf *.o MyBot model/*.o
+	rm -rf *.o MyBot
 
-MyBot: MyBot.o model/Planet.o model/Fleet.o model/PlanetWars.o
+MyBot: MyBot.o Planet.o Fleet.o PlanetWars.o
