@@ -4,15 +4,10 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <fstream>
 #include "PlanetWars.h"
 
-std::pair<int, int> BreakEven() {
-    int ships_to_send;
-    int break_even;
-
-
-    return std::pair<int,int>(ships_to_send, break_even);
-}
+std::ofstream LOG_FILE;
 
 // The DoTurn function is where your code goes. The PlanetWars object contains
 // the state of the game, including information about all planets and fleets
@@ -54,7 +49,8 @@ void DoTurn(PlanetWars& pw) {
       std::vector<Planet> planets = pw.Planets(); // TODO: Use projected ownership instead
       for (int i = 0; i < planets.size(); ++i) {
         const Planet& p = planets[i];
-        if ( p.GrowthRate() == 0 ) {
+        int growth_rate = Map::GrowthRate(p.PlanetID());
+        if ( growth_rate == 0 ) {
             continue;
         }
 
@@ -81,13 +77,13 @@ void DoTurn(PlanetWars& pw) {
                 //   + time to regain units on planet at start of flight
                 //   + time to regain units due to growth rate of enemy
                 //   - time to offset enemy units that will no longer be produced
-                score = ceil((double)cost/p.GrowthRate()/2.0) + days;
+                score = ceil((double)cost/growth_rate/2.0) + days;
             }
             else {
                 // For a neutral planet:
                 //   the number of days to travel to the planet
                 //   + time to regain units spent
-                score = ceil((double)cost/p.GrowthRate()) + days;
+                score = ceil((double)cost/growth_rate) + days;
             }
         }
         else {
@@ -95,7 +91,7 @@ void DoTurn(PlanetWars& pw) {
             // we know that this planet is (or will be) eventually be owned 
             // by an enemy
             cost = p.Cost(days);
-            score = ceil((double)cost/p.GrowthRate()/2.0) + days; 
+            score = ceil((double)cost/growth_rate/2.0) + days; 
             // determine the best day to arrive on
             // for ( int arrive = days; arrive <= future_days; ++arrive ) {
             //     int result = p.Cost( arrive ); 
@@ -125,6 +121,7 @@ void DoTurn(PlanetWars& pw) {
           // (4) Send half the ships from my strongest planet to the weakest
           // planet that I do not own.
             int num_ships = required_ships;
+            LOG_FILE << "issueing order" << std::endl;
             pw.IssueOrder(Order( source, dest, num_ships ));
           }
     }
@@ -176,6 +173,14 @@ const int FLEET_SOURCE = 3;
 const int FLEET_DEST = 4;
 const int FLEET_LENGTH = 5;
 const int FLEET_REMAINING = 6;
+
+struct TempFleet {
+    int owner;
+    int dest;
+    int ships;
+    int remaining;
+};
+
 PlanetWars ParseGameState(const std::string& game_state) {
     std::vector<Planet> planets;
     std::vector<Fleet> fleets;
@@ -197,16 +202,18 @@ PlanetWars ParseGameState(const std::string& game_state) {
             }
             Planet p(
                     planet_id++,              // The ID of this planet
-                    atoi(tokens[3].c_str()),  // Owner
-                    atoi(tokens[4].c_str()),  // Num ships
-                    atoi(tokens[5].c_str()),  // Growth rate
-                    atof(tokens[1].c_str()),  // X
-                    atof(tokens[2].c_str())); // Y
+                    atoi(tokens[PLANET_OWNER].c_str()),  // Owner
+                    atoi(tokens[PLANET_SHIPS].c_str())); // Num ships
             planets.push_back(p);
         } else if (tokens[0] == "F") {
             if (tokens.size() != 7) {
                 throw "Invalid fleet";
             }
+            // TempFleet f;
+            // f.owner = atoi(tokens[FLEET_OWNER].c_str()); 
+            // f.dest = atoi(tokens[FLEET_OWNER].c_str()); 
+            // f.ships = atoi(tokens[FLEET_OWNER].c_str()); 
+            // f.remaining = atoi(tokens[FLEET_OWNER].c_str()); 
             Fleet f(atoi(tokens[1].c_str()),  // Owner
                     atoi(tokens[2].c_str()),  // Num ships
                     atoi(tokens[3].c_str()),  // Source
@@ -291,6 +298,9 @@ int main(int argc, char *argv[]) {
     std::string current_line;
     std::string map_data;
     int turn_number = 0;
+
+    LOG_FILE.open("debug.log");
+
     while (true) {
         int c = std::cin.get();
         current_line += (char)c;
@@ -312,5 +322,8 @@ int main(int argc, char *argv[]) {
             current_line = "";
         }
     }
+
+    LOG_FILE.close();
+
     return 0;
 }

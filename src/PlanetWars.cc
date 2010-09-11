@@ -5,7 +5,7 @@
 #include <sstream>
 
 PlanetWars::PlanetWars(std::vector<Planet> planets, std::vector<Fleet> fleets)
-    : planets_(planets), fleets_(fleets)  {}
+    : planets_(planets), fleets_(fleets)  { }
 
 Planet& PlanetWars::GetPlanet(int planet_id) {
     return planets_[planet_id];
@@ -105,22 +105,6 @@ std::vector<Fleet> PlanetWars::EnemyFleets() const {
 
 std::vector<Order> PlanetWars::Orders() const {
     return orders_;
-}
-
-std::string PlanetWars::ToString() const {
-    std::stringstream s;
-    for (unsigned int i = 0; i < planets_.size(); ++i) {
-        const Planet& p = planets_[i];
-        s << "P " << p.X() << " " << p.Y() << " " << p.Owner()
-            << " " << p.NumShips() << " " << p.GrowthRate() << std::endl;
-    }
-    for (unsigned int i = 0; i < fleets_.size(); ++i) {
-        const Fleet& f = fleets_[i];
-        s << "F " << f.Owner() << " " << f.NumShips() << " "
-            << f.SourcePlanet() << " " << f.DestinationPlanet() << " "
-            << f.TotalTripLength() << " " << f.TurnsRemaining() << std::endl;
-    }
-    return s.str();
 }
 
 void PlanetWars::IssueOrder(Order order) {

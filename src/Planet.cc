@@ -5,17 +5,11 @@
 Planet::Planet(
     int planet_id,
     int owner,
-    int num_ships,
-    int growth_rate,
-    double x,
-    double y
+    int num_ships
 ) {
     planet_id_ = planet_id;
     owner_ = owner;
     num_ships_ = num_ships;
-    growth_rate_ = growth_rate;
-    x_ = x;
-    y_ = y;
     update_prediction_ = true;
 }
 
@@ -29,18 +23,6 @@ int Planet::Owner() const {
 
 int Planet::NumShips() const {
     return num_ships_;
-}
-
-int Planet::GrowthRate() const {
-    return growth_rate_;
-}
-
-double Planet::X() const {
-    return x_;
-}
-
-double Planet::Y() const {
-    return y_;
 }
 
 void Planet::Owner(int new_owner) {
@@ -90,7 +72,7 @@ PlanetState Planet::FutureState(int days) const {
     else {
         PlanetState state = prediction_.back();
         if ( state.owner ) {
-            state.ships += growth_rate_ * ( days - (prediction_.size() - 1) );
+            state.ships += Map::GrowthRate(planet_id_) * ( days - (prediction_.size() - 1) );
         }
         return state;
     }
@@ -136,13 +118,14 @@ void Planet::UpdatePrediction() const {
     state.owner = owner_;
     state.ships = num_ships_;
     prediction_.push_back(state);
+    int growth_rate = Map::GrowthRate( planet_id_ );
 
     for ( int day=1; day < incoming_fleets_.size(); ++day ) {
         const FleetSummary &f = incoming_fleets_[day];
 
         // grow planets which have an owner
         if ( state.owner ) {
-            state.ships += growth_rate_;
+            state.ships += growth_rate;
         }
 
         // FIGHT
