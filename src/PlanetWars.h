@@ -29,7 +29,7 @@ struct Order {
 
 class PlanetWars {
     public:
-        PlanetWars(std::vector<Planet> planets, std::vector<Fleet> fleets);
+        PlanetWars(std::vector<Planet> planets);
 
         // Returns the planet with the given planet_id. There are NumPlanets()
         // planets. They are numbered starting at 0.

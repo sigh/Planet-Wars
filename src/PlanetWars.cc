@@ -4,8 +4,8 @@
 #include <vector>
 #include <sstream>
 
-PlanetWars::PlanetWars(std::vector<Planet> planets, std::vector<Fleet> fleets)
-    : planets_(planets), fleets_(fleets)  { }
+PlanetWars::PlanetWars(std::vector<Planet> planets)
+    : planets_(planets) { }
 
 Planet& PlanetWars::GetPlanet(int planet_id) {
     return planets_[planet_id];
@@ -110,14 +110,10 @@ std::vector<Order> PlanetWars::Orders() const {
 void PlanetWars::IssueOrder(Order order) {
     planets_[order.source].RemoveShips( order.ships );
     planets_[order.dest].AddIncomingFleet(
-        Fleet(
-            1,
-            order.ships, 
-            order.source,
-            order.dest,
-            Map::Distance( order.source, order.dest ),
-            Map::Distance( order.source, order.dest )
-        )
+        1,
+        order.dest,
+        order.ships, 
+        Map::Distance( order.source, order.dest )
     );
     orders_.push_back(order);
 }

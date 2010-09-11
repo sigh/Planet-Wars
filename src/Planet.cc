@@ -46,20 +46,23 @@ void Planet::RemoveShips(int amount) {
     }
 }
 
-void Planet::AddIncomingFleet(const Fleet& fleet) {
-    int arrival_day = fleet.TurnsRemaining();
-
+void Planet::AddIncomingFleet(
+    int owner,
+    int dest,
+    int ships,
+    int remaining
+) {
     // ensure incoming_fleets_ is long enough
-    if ( arrival_day + 1 > incoming_fleets_.size() ) {
-        incoming_fleets_.resize( arrival_day + 1, FleetSummary(0,0) );
+    if ( remaining + 1 > incoming_fleets_.size() ) {
+        incoming_fleets_.resize( remaining + 1, FleetSummary(0,0) );
     }
 
     // update fleet numbers
-    if ( fleet.Owner() == 1 ) {
-        incoming_fleets_[arrival_day].first += fleet.NumShips();
+    if ( owner == 1 ) {
+        incoming_fleets_[remaining].first += ships;
     }
     else {
-        incoming_fleets_[arrival_day].second += fleet.NumShips();
+        incoming_fleets_[remaining].second += ships;
     }
 
     update_prediction_ = true;
