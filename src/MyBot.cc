@@ -109,7 +109,6 @@ void DoTurn(PlanetWars& pw) {
         // TODO: we should only send units when required_ships > 0 BUT
         //       it does help redirstribute ships.
         // Keep until we have proper redistribution
-      
           // determine the number of ships required to take over the planet
           required_ships += 3;
 
@@ -121,7 +120,6 @@ void DoTurn(PlanetWars& pw) {
           // (4) Send half the ships from my strongest planet to the weakest
           // planet that I do not own.
             int num_ships = required_ships;
-            LOG_FILE << "issueing order" << std::endl;
             pw.IssueOrder(Order( source, dest, num_ships ));
           }
     }
@@ -256,8 +254,8 @@ void ParseMap(const std::string& game_state) {
             }
             Map::AddPlanet(
                 atoi(tokens[PLANET_GROWTH].c_str()),
-                atoi(tokens[PLANET_X].c_str()),
-                atoi(tokens[PLANET_Y].c_str())
+                atof(tokens[PLANET_X].c_str()),
+                atof(tokens[PLANET_Y].c_str())
             );
         } else if (tokens[0] != "F") {
             throw "Invalid object";
@@ -300,6 +298,7 @@ int main(int argc, char *argv[]) {
     int turn_number = 0;
 
     LOG_FILE.open("debug.log");
+    LOG_FILE << "Start logging" << std::endl;
 
     while (true) {
         int c = std::cin.get();
@@ -312,6 +311,7 @@ int main(int argc, char *argv[]) {
                 }
 
                 ++turn_number;
+                LOG_FILE << "== Turn " << turn_number << " ==" << std::endl;
                 PlanetWars pw = ParseGameState(map_data);
                 DoTurn(pw);
                 FinishTurn(pw);

@@ -11,6 +11,8 @@ Planet::Planet(
     owner_ = owner;
     num_ships_ = num_ships;
     update_prediction_ = true;
+    incoming_fleets_.clear();
+    prediction_.clear();
 }
 
 int Planet::PlanetID() const {

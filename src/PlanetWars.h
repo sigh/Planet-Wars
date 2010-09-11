@@ -13,6 +13,9 @@
 #include "Planet.h"
 #include "Fleet.h"
 
+#include <fstream>
+extern std::ofstream LOG_FILE;
+
 class Planet;
 
 struct Order {
