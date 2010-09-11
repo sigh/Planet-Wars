@@ -21,16 +21,16 @@ std::ofstream LOG_FILE;
 // http://www.ai-contest.com/resources.
 void DoTurn(PlanetWars& pw) {
 
-  std::vector<Fleet> my_fleets = pw.MyFleets();
+  // std::vector<Fleet> my_fleets = pw.MyFleets();
 
-  // defence
-  std::vector<Fleet> enemy_fleets = pw.EnemyFleets();
-  for ( int i=0; i < enemy_fleets.size(); ++i ) {
-    Planet& dest = pw.GetPlanet(enemy_fleets[i].DestinationPlanet());
-    if ( dest.Owner() == 1 ) {
-        dest.RemoveShips( enemy_fleets[i].NumShips() );
-    }
-  }
+  // // defence
+  // std::vector<Fleet> enemy_fleets = pw.EnemyFleets();
+  // for ( int i=0; i < enemy_fleets.size(); ++i ) {
+  //   Planet& dest = pw.GetPlanet(enemy_fleets[i].DestinationPlanet());
+  //   if ( dest.Owner() == 1 ) {
+  //       dest.RemoveShips( enemy_fleets[i].NumShips() );
+  //   }
+  // }
 
   // (2) Find my strongest planet.
   int source = -1;
@@ -46,7 +46,9 @@ void DoTurn(PlanetWars& pw) {
       int dest_score = 999999;
       int dest_delay = 0;
         int required_ships = 0;
-      std::vector<Planet> planets = pw.Planets(); // TODO: Use projected ownership instead
+      std::vector<Planet> planets = pw.MyPlanets(); // TODO: Use projected ownership instead
+      std::vector<Planet> notmyplanets = pw.NotMyPlanets(); // TODO: Use projected ownership instead
+      planets.insert(planets.end(), notmyplanets.begin(), notmyplanets.end()); 
       for (int i = 0; i < planets.size(); ++i) {
         const Planet& p = planets[i];
         int growth_rate = Map::GrowthRate(p.PlanetID());
@@ -181,7 +183,7 @@ struct TempFleet {
 
 PlanetWars ParseGameState(const std::string& game_state) {
     std::vector<Planet> planets;
-    std::vector<Fleet> fleets;
+    std::vector<TempFleet> fleets;
     std::vector<std::string> lines = StringUtil::Tokenize(game_state, "\n");
     int planet_id = 0;
     for (unsigned int i = 0; i < lines.size(); ++i) {
@@ -207,17 +209,11 @@ PlanetWars ParseGameState(const std::string& game_state) {
             if (tokens.size() != 7) {
                 throw "Invalid fleet";
             }
-            // TempFleet f;
-            // f.owner = atoi(tokens[FLEET_OWNER].c_str()); 
-            // f.dest = atoi(tokens[FLEET_OWNER].c_str()); 
-            // f.ships = atoi(tokens[FLEET_OWNER].c_str()); 
-            // f.remaining = atoi(tokens[FLEET_OWNER].c_str()); 
-            Fleet f(atoi(tokens[1].c_str()),  // Owner
-                    atoi(tokens[2].c_str()),  // Num ships
-                    atoi(tokens[3].c_str()),  // Source
-                    atoi(tokens[4].c_str()),  // Destination
-                    atoi(tokens[5].c_str()),  // Total trip length
-                    atoi(tokens[6].c_str())); // Turns remaining
+            TempFleet f;
+            f.owner = atoi(tokens[FLEET_OWNER].c_str()); 
+            f.dest = atoi(tokens[FLEET_DEST].c_str()); 
+            f.ships = atoi(tokens[FLEET_SHIPS].c_str()); 
+            f.remaining = atoi(tokens[FLEET_REMAINING].c_str()); 
             fleets.push_back(f);
         } else {
             throw "Invalid object";
@@ -226,13 +222,17 @@ PlanetWars ParseGameState(const std::string& game_state) {
 
     // inform planets about fleets
     for (int i = 0; i < fleets.size(); ++i) {
-        const Fleet& fleet = fleets[i];
-        planets[ fleet.DestinationPlanet() ].AddIncomingFleet(fleet);
+        const TempFleet& f = fleets[i];
+        planets[ f.dest ].AddIncomingFleet(
+            f.owner,
+            f.dest,
+            f.ships,
+            f.remaining
+        );
     }
 
     return PlanetWars(
-        planets,
-        fleets
+        planets
     );
 }
 
@@ -313,7 +313,13 @@ int main(int argc, char *argv[]) {
                 ++turn_number;
                 LOG_FILE << "== Turn " << turn_number << " ==" << std::endl;
                 PlanetWars pw = ParseGameState(map_data);
+                // OMG how hacky... this is what passes for defence now
+                // TODO: Remove this when we have DESTINATION BASED processing
                 DoTurn(pw);
+                if ( turn_number > 1 ) {
+                    DoTurn(pw);
+                    DoTurn(pw);
+                }
                 FinishTurn(pw);
                 map_data = "";
             } else {

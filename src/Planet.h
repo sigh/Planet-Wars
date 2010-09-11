@@ -46,7 +46,7 @@ class Planet {
     void AddShips(int amount);
     void RemoveShips(int amount);
 
-    void AddIncomingFleet(const Fleet& fleet);
+    void AddIncomingFleet( int owner, int dest, int ships, int remaining);
     PlanetState FutureState(int days) const;
     int FutureOwner() const;
     int Cost( int days ) const;
