@@ -1,8 +1,15 @@
 #include <iostream>
 #include <fstream>
+#include <cmath>
 #include "model/PlanetWars.h"
 
-std::ofstream log_file("debug.log", std::ios::app);
+std::pair<int, int> BreakEven() {
+    int ships_to_send;
+    int break_even;
+
+
+    return std::pair<int,int>(ships_to_send, break_even);
+}
 
 // The DoTurn function is where your code goes. The PlanetWars object contains
 // the state of the game, including information about all planets and fleets
@@ -15,12 +22,6 @@ std::ofstream log_file("debug.log", std::ios::app);
 // own. Check out the tutorials and articles on the contest website at
 // http://www.ai-contest.com/resources.
 void DoTurn(PlanetWars& pw, int turn_number) {
-  if ( 0 && pw.MyFleets().size() >= 1 ) {
-    Fleet f = pw.MyFleets()[0];
-    log_file << f.TotalTripLength() << " "
-                   << f.TurnsRemaining() << " "
-                   << pw.Distance( f.SourcePlanet(), f.DestinationPlanet() );
-  }
 
   std::vector<Fleet> my_fleets = pw.MyFleets();
 
@@ -35,7 +36,6 @@ void DoTurn(PlanetWars& pw, int turn_number) {
 
   // (2) Find my strongest planet.
   int source = -1;
-  double source_score = -999999.0;
   int source_num_ships = 0;
   std::vector<Planet> my_planets = pw.MyPlanets();
   for (int i = 0; i < my_planets.size(); ++i) {
@@ -45,55 +45,74 @@ void DoTurn(PlanetWars& pw, int turn_number) {
 
       // (3) Find the weakest enemy or neutral planet.
       int dest = -1;
-      double dest_score = 999999.0;
-      std::vector<Planet> not_my_planets = pw.NotMyPlanets(); // TODO: Use projected ownership instead
-      for (int i = 0; i < not_my_planets.size(); ++i) {
-        const Planet& p = not_my_planets[i];
-        double score;
-
-        // Don't send ships to this planet if we have already started attacking it
-        // bool is_attacked = false;
-        // for ( int f=0; f < my_fleets.size(); ++f) {
-        //     if ( my_fleets[f].DestinationPlanet() == p.PlanetID() ) {
-        //         is_attacked = true;
-        //         break;
-        //     }
-        // }
-        // if ( is_attacked ) {
-        //     continue;
-        // }
-
-        // Estimate the number of days required to break even after capturing a planet
-        int days = pw.Distance( p.PlanetID(), source );
-        PlanetState projection = p.Projection( days );
-        if ( projection.owner == 1 ) { 
+      int dest_score = 999999;
+      int dest_delay = 0;
+        int required_ships = 0;
+      std::vector<Planet> planets = pw.Planets(); // TODO: Use projected ownership instead
+      for (int i = 0; i < planets.size(); ++i) {
+        const Planet& p = planets[i];
+        if ( p.GrowthRate() == 0 ) {
             continue;
         }
-        else if ( projection.owner ) { 
-            // For an enemy planet:
-            //   the number of days to travel to the planet 
-            //   + time to regain units on planet at start of flight
-            //   + time to regain units due to growth rate of enemy
-            //   - time to offset enemy units that will no longer be produced
-            score = (double)projection.ships/p.GrowthRate()/2.0 + days;
-        }                                                                                             
-        else {
-            // For a neutral planet:
-            //   the number of days to travel to the planet
-            //   + time to regain units spent
-            score = (double)projection.ships/p.GrowthRate() + days;
+
+        // Don't need to do anything if we will own the planet
+        int future_owner = p.FutureOwner();
+        if ( future_owner == 1) {
+            continue;
         }
+
+        // Estimate the number of days required to break even after capturing a planet
+        int score = 99999;
+        int delay = 0;
+        int cost = 0;
+
+        int days = pw.Distance( p.PlanetID(), source );
+        int future_days = p.FutureDays();
+        if ( days > future_days ) {
+            // easy case: we arrive after all the other fleets
+            PlanetState prediction = p.FutureState( days );
+            cost = prediction.ships;
+            if ( future_owner ) {
+                // For an enemy planet:
+                //   the number of days to travel to the planet 
+                //   + time to regain units on planet at start of flight
+                //   + time to regain units due to growth rate of enemy
+                //   - time to offset enemy units that will no longer be produced
+                score = ceil((double)cost/p.GrowthRate()/2.0) + days;
+            }
+            else {
+                // For a neutral planet:
+                //   the number of days to travel to the planet
+                //   + time to regain units spent
+                score = ceil((double)cost/p.GrowthRate()) + days;
+            }
+        }
+        else {
+            // hard case: we can arrive before some other ships
+            // we know that this planet is (or will be) eventually be owned 
+            // by an enemy
+            cost = p.Cost(days);
+            score = ceil((double)cost/p.GrowthRate()/2.0) + days; 
+            // determine the best day to arrive on
+            // for ( int arrive = days; arrive <= future_days; ++arrive ) {
+            //     int result = p.Cost( arrive ); 
+            // }
+        }
+
         if (score < dest_score) {
           dest_score = score;
           dest = p.PlanetID();
+          required_ships = cost;
         }
       }
 
-      if (source >= 0 && dest >= 0) {
+      if (source >= 0 && dest >= 0 ) {
+        // TODO: we should only send units when required_ships > 0 BUT
+        //       it does help redirstribute ships.
+        // Keep until we have proper redistribution
+      
           // determine the number of ships required to take over the planet
-
-          const Planet &p_dest = pw.GetPlanet(dest);
-            int required_ships = p_dest.Projection(pw.Distance( dest, source )).ships + 3;
+          required_ships += 3;
 
           // ensure that we have enough ships to take over the planet.
           if ( required_ships > (int)(source_num_ships * 0.75) ) {
@@ -130,6 +149,5 @@ int main(int argc, char *argv[]) {
       current_line = "";
     }
   }
-  log_file.close();
   return 0;
 }
