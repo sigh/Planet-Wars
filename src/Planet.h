@@ -20,7 +20,6 @@ class Planet {
  public:
     // Initializes a planet.
     Planet( 
-        const PlanetWars* pw,
         int planet_id,
         int owner,
         int num_ships,
@@ -71,7 +70,6 @@ class Planet {
     int num_ships_;
     int growth_rate_;
     double x_, y_;
-    const PlanetWars* pw_;
 
     std::vector<FleetSummary> incoming_fleets_;
     mutable std::vector<PlanetState> prediction_;

@@ -3,7 +3,6 @@
 #include <algorithm>
 
 Planet::Planet(
-    const PlanetWars* pw,
     int planet_id,
     int owner,
     int num_ships,
@@ -17,7 +16,6 @@ Planet::Planet(
     growth_rate_ = growth_rate;
     x_ = x;
     y_ = y;
-    pw_ = pw;
     update_prediction_ = true;
 }
 
@@ -63,16 +61,6 @@ void Planet::RemoveShips(int amount) {
         num_ships_ = 0;
     }
 }
-
-// compare fleets by distance from planet
-struct CompareFleets {
-    const PlanetWars *pw_;
-    CompareFleets(const PlanetWars *pw) { pw_ = pw; }
-
-    bool operator()(int lhs, int rhs) const {
-        return pw_->GetFleet(lhs).TurnsRemaining() < pw_->GetFleet(rhs).TurnsRemaining();
-    }
-};
 
 void Planet::AddIncomingFleet(const Fleet& fleet) {
     int arrival_day = fleet.TurnsRemaining();

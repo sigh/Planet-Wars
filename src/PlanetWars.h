@@ -9,39 +9,24 @@
 #include <string>
 #include <vector>
 
+#include "Map.h"
 #include "Planet.h"
 #include "Fleet.h"
 
-// TODO: Remove this
-#include <iostream>
-#include <fstream>
-extern std::ofstream log_file;
-
 class Planet;
 
-// This is a utility class that parses strings.
-class StringUtil {
+struct Order {
     public:
-        // Tokenizes a string s into tokens. Tokens are delimited by any of the
-        // characters in delimiters. Blank tokens are omitted.
-        static void Tokenize(const std::string& s,
-                const std::string& delimiters,
-                std::vector<std::string>& tokens);
-
-        // A more convenient way of calling the Tokenize() method.
-        static std::vector<std::string> Tokenize(
-                const std::string& s,
-                const std::string& delimiters = std::string(" "));
+        int source;
+        int dest;
+        int ships;
+        Order(int source, int dest, int ships)
+            : source(source), dest(dest), ships(ships) {}
 };
 
 class PlanetWars {
     public:
-        // Initializes the game state given a string containing game state data.
-        PlanetWars(const std::string& game_state);
-
-        // Returns the number of planets on the map. Planets are numbered starting
-        // with 0.
-        int NumPlanets() const;
+        PlanetWars(std::vector<Planet> planets, std::vector<Fleet> fleets);
 
         // Returns the planet with the given planet_id. There are NumPlanets()
         // planets. They are numbered starting at 0.
@@ -82,23 +67,19 @@ class PlanetWars {
         // Return a list of all the fleets owned by enemy players.
         std::vector<Fleet> EnemyFleets() const;
 
+        // Return a list of the currently pending orders 
+        std::vector<Order> Orders() const;
+
         // Writes a string which represents the current game state. This string
         // conforms to the Point-in-Time format from the project Wiki.
         std::string ToString() const;
-
-        // Returns the distance between two planets, rounded up to the next highest
-        // integer. This is the number of discrete time steps it takes to get between
-        // the two planets.
-        int Distance(int source_planet, int destination_planet) const;
 
         // Sends an order to the game engine. The order is to send num_ships ships
         // from source_planet to destination_planet. The order must be valid, or
         // else your bot will get kicked and lose the game. For example, you must own
         // source_planet, and you can't send more ships than you actually have on
         // that planet.
-        void IssueOrder(int source_planet,
-                int destination_planet,
-                int num_ships);
+        void IssueOrder(Order order);
 
         // Returns true if the named player owns at least one planet or fleet.
         // Otherwise, the player is deemed to be dead and false is returned.
@@ -121,6 +102,7 @@ class PlanetWars {
         // planets and fleets, would we!?
         std::vector<Planet> planets_;
         std::vector<Fleet> fleets_;
+        std::vector<Order> orders_;
 };
 
 #endif
