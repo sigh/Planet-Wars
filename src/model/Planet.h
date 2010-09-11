@@ -60,7 +60,10 @@ class Planet {
     void RemoveShips(int amount);
 
     void AddIncomingFleet(const Fleet& fleet);
-    PlanetState Projection(int days) const;
+    PlanetState FutureState(int days) const;
+    int FutureOwner() const;
+    int Cost( int days ) const;
+    int FutureDays() const;
 
  private:
     int planet_id_;
@@ -71,10 +74,10 @@ class Planet {
     const PlanetWars* pw_;
 
     std::vector<FleetSummary> incoming_fleets_;
-    mutable std::vector<PlanetState> projection_;
-    mutable bool update_projection_;
+    mutable std::vector<PlanetState> prediction_;
+    mutable bool update_prediction_;
 
-    void UpdateProjection() const;
+    void UpdatePrediction() const;
 };
 
 #endif

@@ -1,9 +1,8 @@
 Current src/MyBot
 Basic   bot/Basic
-Rage    bot/Rage
 Stingy  bot/Stingy
-PSimple bot/PSimple
-# PSimple2 bot/PSimple2
 PSimple3 bot/PSimple3
+PCost bot/PCost
+*Dual java -jar example_bots/DualBot.jar
 *Rage java -jar example_bots/RageBot.jar
 

@@ -18,7 +18,7 @@ Planet::Planet(
     x_ = x;
     y_ = y;
     pw_ = pw;
-    update_projection_ = true;
+    update_prediction_ = true;
 }
 
 int Planet::PlanetID() const {
@@ -90,36 +90,64 @@ void Planet::AddIncomingFleet(const Fleet& fleet) {
         incoming_fleets_[arrival_day].second += fleet.NumShips();
     }
 
-    update_projection_ = true;
+    update_prediction_ = true;
 }
 
-PlanetState Planet::Projection(int days) const {
-    UpdateProjection();
-    if ( days < projection_.size() ) {
-        return projection_[days];     
+// predicted owner after all fleets have arrived
+PlanetState Planet::FutureState(int days) const {
+    UpdatePrediction();
+    if ( days < prediction_.size() ) {
+        return prediction_[days];     
     }
     else {
-        PlanetState state = projection_.back();
+        PlanetState state = prediction_.back();
         if ( state.owner ) {
-            state.ships += growth_rate_ * ( days - (projection_.size() - 1) );
+            state.ships += growth_rate_ * ( days - (prediction_.size() - 1) );
         }
         return state;
     }
 }
 
-void Planet::UpdateProjection() const {
+// TODO: Make this work for any player anytime
+// Currently assumes attacker is playr 1 and
+// Future owner is player 2
+int Planet::Cost( int days ) const {
+    if ( days >= prediction_.size() ) {
+        return FutureState( days ).ships; 
+    }
+
+    int ships_required = prediction_[days].ships;
+    for ( int i = days+1; i < incoming_fleets_.size(); ++i ) {
+        ships_required += incoming_fleets_[i].second - incoming_fleets_[i].first;
+    }
+
+}
+
+// return the number of days until the last fleet has arrived
+int Planet::FutureDays() const {
+    UpdatePrediction();
+    return prediction_.size() - 1;
+}
+
+// predicted owner after all fleets have arrived
+int Planet::FutureOwner() const {
+    UpdatePrediction();
+    return prediction_.back().owner;
+}
+
+void Planet::UpdatePrediction() const {
     // If fleets have not been updated we don't need to do anything
-    if ( not update_projection_ ) {
+    if ( not update_prediction_ ) {
         return;
     }
 
-    projection_.clear();
+    prediction_.clear();
 
     // initialise current day
     PlanetState state;
     state.owner = owner_;
     state.ships = num_ships_;
-    projection_.push_back(state);
+    prediction_.push_back(state);
 
     for ( int day=1; day < incoming_fleets_.size(); ++day ) {
         const FleetSummary &f = incoming_fleets_[day];
@@ -176,10 +204,10 @@ void Planet::UpdateProjection() const {
             state.owner = 0;
         }
 
-        projection_.push_back( state );
+        prediction_.push_back( state );
     }
 
-    update_projection_ = false;
+    update_prediction_ = false;
 }
 
 
