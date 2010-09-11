@@ -70,10 +70,6 @@ class PlanetWars {
         // Return a list of the currently pending orders 
         std::vector<Order> Orders() const;
 
-        // Writes a string which represents the current game state. This string
-        // conforms to the Point-in-Time format from the project Wiki.
-        std::string ToString() const;
-
         // Sends an order to the game engine. The order is to send num_ships ships
         // from source_planet to destination_planet. The order must be valid, or
         // else your bot will get kicked and lose the game. For example, you must own

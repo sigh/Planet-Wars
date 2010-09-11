@@ -22,10 +22,7 @@ class Planet {
     Planet( 
         int planet_id,
         int owner,
-        int num_ships,
-        int growth_rate,
-        double x,
-        double y
+        int num_ships
     );
 
     // Returns the ID of this planets. Planets are numbered starting at zero.
@@ -39,15 +36,6 @@ class Planet {
 
     // The number of ships on the planet. This is the "population" of the planet.
     int NumShips() const;
-
-    // Returns the growth rate of the planet. Unless the planet is neutral, the
-    // population of the planet grows by this amount each turn. The higher this
-    // number is, the faster this planet produces ships.
-    int GrowthRate() const;
-
-    // The position of the planet in space.
-    double X() const;
-    double Y() const;
 
     // Use the following functions to set the properties of this planet. Note
     // that these functions only affect your program's copy of the game state.
@@ -68,8 +56,6 @@ class Planet {
     int planet_id_;
     int owner_;
     int num_ships_;
-    int growth_rate_;
-    double x_, y_;
 
     std::vector<FleetSummary> incoming_fleets_;
     mutable std::vector<PlanetState> prediction_;
