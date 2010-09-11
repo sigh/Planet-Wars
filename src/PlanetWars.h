@@ -11,7 +11,6 @@
 
 #include "Map.h"
 #include "Planet.h"
-#include "Fleet.h"
 
 #include <fstream>
 extern std::ofstream LOG_FILE;
@@ -35,14 +34,6 @@ class PlanetWars {
         // planets. They are numbered starting at 0.
         Planet& GetPlanet(int planet_id);
 
-        // Returns the number of fleets.
-        int NumFleets() const;
-
-        // Returns the fleet with the given fleet_id. Fleets are numbered starting
-        // with 0. There are NumFleets() fleets. fleet_id's are not consistent from
-        // one turn to the next.
-        const Fleet& GetFleet(int fleet_id) const;
-
         // Returns a list of all the planets.
         std::vector<Planet> Planets() const;
 
@@ -61,15 +52,6 @@ class PlanetWars {
         // player. This includes all enemy planets and neutral planets.
         std::vector<Planet> NotMyPlanets() const;
 
-        // Return a list of all the fleets.
-        std::vector<Fleet> Fleets() const;
-
-        // Return a list of all the fleets owned by the current player.
-        std::vector<Fleet> MyFleets() const;
-
-        // Return a list of all the fleets owned by enemy players.
-        std::vector<Fleet> EnemyFleets() const;
-
         // Return a list of the currently pending orders 
         std::vector<Order> Orders() const;
 
@@ -80,13 +62,10 @@ class PlanetWars {
         // that planet.
         void IssueOrder(Order order);
 
-        // Returns true if the named player owns at least one planet or fleet.
-        // Otherwise, the player is deemed to be dead and false is returned.
-        bool IsAlive(int player_id) const;
-
         // Returns the number of ships that the given player has, either located
         // on planets or in flight.
-        int NumShips(int player_id) const;
+        // TODO: Implement this
+        // int NumShips(int player_id) const;
 
         // Sends a message to the game engine letting it know that you're done
         // issuing orders for now.
@@ -100,7 +79,6 @@ class PlanetWars {
         // Store all the planets and fleets. OMG we wouldn't wanna lose all the
         // planets and fleets, would we!?
         std::vector<Planet> planets_;
-        std::vector<Fleet> fleets_;
         std::vector<Order> orders_;
 };
 
