@@ -8,4 +8,4 @@ zip:
 clean:
 	rm -rf *.o MyBot *.zip
 
-MyBot: MyBot.o Planet.o Fleet.o PlanetWars.o Map.o
+MyBot: MyBot.o Planet.o PlanetWars.o Map.o
