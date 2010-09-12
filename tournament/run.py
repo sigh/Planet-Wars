@@ -4,17 +4,19 @@ import subprocess
 import re
 import forkmap
 import sqlite3
+import getopt
+import sys
 
-MAX_TURNS=1000
-PLAY_GAME="tools/PlayGame.jar"
-LOG="log.txt"
-BOT_FILE="tournament/bots.txt"
-
-MAP_PATH = 'maps/map%d.txt'
-
-DB_FILE = 'tournament/db'
-
-conn = sqlite3.connect(DB_FILE)
+OPTIONS = {
+    'max_turns': 1000,
+    'timeout'  : 1000,
+    'engine'   : "tools/PlayGame.jar",
+    'log_file' : "log.txt",
+    'bot_file' : "tournament/bots.txt",
+    'db'       : "tournament/db",
+    'map_dir'  : "maps",
+    'maps'     : ""
+}
 
 def run_games(games):
     c = conn.cursor()
@@ -39,7 +41,7 @@ def run_games(games):
                 players[0],
                 players[1],
                 map,
-                MAX_TURNS,
+                OPTIONS['max_turns'],
                 winner,
                 moves
             )
@@ -77,7 +79,7 @@ def cached_results(games):
                 players[0],
                 players[1],
                 map,
-                MAX_TURNS
+                OPTIONS['max_turns']
             )
         )
         results.append(c.fetchone())
@@ -103,7 +105,7 @@ def run_game(game):
 def generate_command(game, bots, names):
     map_id = game['map']
     players = [ bots[i] for i in game['players'] ]
-    args = ['java', '-jar', PLAY_GAME, map_path(map_id), str(MAX_TURNS), str(MAX_TURNS), LOG ] + players
+    args = ['java', '-jar', OPTIONS['engine'], map_path(map_id), str(OPTIONS['max_turns']), str(OPTIONS['max_turns']), OPTIONS['log_file'] ] + players
 
     return (args, map_id, [ names[i] for i in game['players'] ])
 
@@ -118,7 +120,7 @@ def empty_score_matrix(n):
 
 def map_path(map_id):
     """Return the file path given a map id"""
-    return MAP_PATH %(map_id)
+    return "%s/map%d.txt" %(OPTIONS['map_dir'],map_id)
 
 def round_robin(maps, players):
     games = []
@@ -197,9 +199,38 @@ def get_bots(file):
     bots = [ p[1].strip() for p in parts if p ]
     return (bots, names)
 
+def parse_args():
+    opts, args = getopt.getopt(sys.argv[1:], "", [o+"=" for o in OPTIONS])
+    for o, a in opts:
+        OPTIONS[o[2:]] = a
+
+def get_maps():
+    if not OPTIONS['maps']:
+        return all_maps()
+
+    maps = OPTIONS['maps'].split(',')
+
+    result = []
+    for map in maps:
+        print map
+        if '..' in map:
+            r = map.split('..')
+            result.extend(range(int(r[0]),int(r[1])+1))
+        else:
+            result.append(int(map))
+    return result
+
+def all_maps():
+    return range(1,101)
+
 if __name__ == '__main__':
-    (bots, names) = get_bots(BOT_FILE)
-    games = [ generate_command( game, bots, names ) for game in round_robin(range(1,11), bots) ]
+    parse_args()
+
+    global conn
+    conn = sqlite3.connect(OPTIONS['db'])
+
+    (bots, names) = get_bots(OPTIONS['bot_file'])
+    games = [ generate_command( game, bots, names ) for game in round_robin(get_maps(), bots) ]
     results = run_games(games)
     scores = generate_scores(results, games, names)
     pretty_print_scores(scores, names)
