@@ -124,6 +124,7 @@ void Planet::UpdatePrediction() const {
     state.ships = num_ships_;
     prediction_.push_back(state);
     int growth_rate = Map::GrowthRate( planet_id_ );
+    std::vector<int> sort_states(3,0);
 
     for ( int day=1; day < incoming_fleets_.size(); ++day ) {
         const FleetSummary &f = incoming_fleets_[day];
@@ -139,6 +140,7 @@ void Planet::UpdatePrediction() const {
             state.ships += f.first - f.second;
             if ( state.ships < 0 ) {
                 state.owner = 2;
+                state.ships = -state.ships;
             }
         }
         else if ( state.owner == 2 ) {
@@ -146,40 +148,30 @@ void Planet::UpdatePrediction() const {
             state.ships += f.second - f.first;
             if ( state.ships < 0 ) {
                 state.owner = 1;
+                state.ships = -state.ships;
             }
         }
         else {
             // neutral planet
-            int num_ships = f.first + f.second;
-            if ( num_ships <= state.ships ) {
-                // not enough units to conquer neutral
-                state.ships -= num_ships; 
-            }
-            else if ( f.first <= state.ships/2 ) {
-                state.ships -= num_ships;
-                state.owner = 2;
-            }
-            else if ( f.second <= state.ships/2 ) {
-                state.ships -= num_ships;
-                state.owner = 1;
-            }
-            else {
-                state.ships = f.first - f.second;
-                state.owner = state.ships > 0 ? 1 : 2;
+            sort_states[0] = state.ships;
+            sort_states[1] = f.first;
+            sort_states[2] = f.second;
+            sort( sort_states.begin(), sort_states.end() );
+
+            // the number of ships left is (the maximum minus the second highest)
+            state.ships = sort_states[2] - sort_states[1];
+            if ( state.ships > 0 ) {
+                // if there was a winner, determine who it was
+                if ( sort_states[2] == f.first ) {
+                    state.owner = 1;
+                }
+                else if ( sort_states[2] == f.second ) {
+                    state.owner = 2;
+                }
             }
         }
 
-        // clean up the mess
-        if ( state.ships < 0 ) {
-            // catering for bug in game engine
-            // TODO: Remove when fixed
-            state.ships = -state.ships - 1;
-        }
-        if ( state.ships == 0 ) {
-            // A planet with 0 units is neutral
-            state.owner = 0;
-        }
-
+        // update the state
         prediction_.push_back( state );
     }
 

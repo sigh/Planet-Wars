@@ -4,11 +4,13 @@
  * updating the map and enforcing the rules.
  *
  * gcc -o tcp tcp.c
- * ./tcp 213.3.30.106 9999 username ./MyBot
+ * ./tcp 213.3.30.106 9999 username -p password ./MyBot
  *
- * See http://www.benzedrine.cx/planetwars/ for ELO ratings.
+ * See http://www.benzedrine.cx/tron.html for ELO ratings.
  *
  * History
+ *   2.2 20100913 optional passing of user password
+ *                support passing argv to execv(), waitpid()
  *   2.1 20100907 kill() child
  *   2.0 20100906 rename from previous contest
  *
@@ -44,6 +46,8 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
@@ -74,13 +78,11 @@ tcp_connect(const char *host, unsigned port)
 }
 
 static pid_t
-bpopen(char *cmd, int *fdr, int *fdw)
+bpopen(char *argv[], int *fdr, int *fdw)
 {
 	int p2c[2], c2p[2];
 	pid_t pid;
-	char *argv[] = { NULL, NULL };
 
-	argv[0] = cmd;
 	if (pipe(p2c) || pipe(c2p)) {
 		printf("pipe: %s\n", strerror(errno));
 		return (0);
@@ -95,7 +97,7 @@ bpopen(char *cmd, int *fdr, int *fdw)
 		dup2(c2p[1], STDOUT_FILENO);
 		dup2(p2c[0], STDIN_FILENO);
 		execv(argv[0], argv);
-		fprintf(stderr, "execv: %s: failed\n", argv[0]);
+		fprintf(stderr, "execv: %s: %s\n", argv[0], strerror(errno));
 		exit(1);
 	}
 	close(c2p[1]);
@@ -112,12 +114,11 @@ split_lines(const char *s, char *d, unsigned len, int fd)
 	while (*s && off + 2 < len) {
 		if ((d[off] = *s++) == '\n') {
 			d[off + 1] = 0;
-			if (!strncmp(d, "INFO ", 5))
+			if (!strncmp(d, "INFO ", 5)) {
 				printf("%s", d + 5);
-			else {
-				printf("%s", d);
+				fflush(stdout);
+			} else
 				write(fd, d, off + 1);
-			}
 			*d = 0;
 			off = 0;
 		} else
@@ -130,26 +131,46 @@ int main(int argc, char *argv[])
 {
 	int fd[3] = { -1, -1, -1 };
 	pid_t child = 0;
-	int i, r, len;
+	int i, r, len, status;
 	fd_set read_fds;
 	struct timeval tv;
 	char buf[1024], line[2][1024];
+	const char *password = "";
 
-	if (argc != 5) {
-		printf("usage: %s ip port username command\n", argv[0]);
+	if (argc < 5 || (!strcmp(argv[4], "-p") && argc < 7)) {
+		printf("usage: %s ip port username [-p password] "
+		    "command [args]\n", argv[0]);
 		return (1);
 	}
+	if (!strcmp(argv[4], "-p"))
+		password = argv[5];
 
-	if (!(child = bpopen(argv[4], &fd[1], &fd[2])))
+	if (!(child = bpopen(argv + (password[0] ? 6 : 4), &fd[1], &fd[2])))
 		goto done;
-	sleep(3); /* allow child to properly startup... */
+	sleep(2); /* allow child to properly startup... */
+	if (waitpid(child, &status, WNOHANG)) {
+		if (WIFEXITED(status))
+			printf("command terminated with exit status %d\n",
+			    WEXITSTATUS(status));
+		else if (WIFSIGNALED(status))
+			printf("command terminated by signal %d\n",
+			    WTERMSIG(status));
+		else
+			printf("command terminated (status %d)\n", status);
+		goto done;
+	}
 
 	if ((fd[0] = tcp_connect(argv[1], atoi(argv[2]))) < 0)
 		goto done;
-	snprintf(buf, sizeof(buf), "USER %s\n", argv[3]);
+	if (password[0])
+		snprintf(buf, sizeof(buf), "USER %s PASS %s\n",
+		    argv[3], password);
+	else
+		snprintf(buf, sizeof(buf), "USER %s\n", argv[3]);
 	write(fd[0], buf, strlen(buf));
 
 	printf("connected to %s:%s, waiting for game\n", argv[1], argv[2]);
+	fflush(stdout);
 	line[0][0] = line[1][0] = 0;
 	while (1) {
 		FD_ZERO(&read_fds);
@@ -191,7 +212,8 @@ done:
 	for (i = 0; i < 3; ++i)
 		if (fd[i] != -1)
 			close(fd[i]);
-	if (child) {
+	if (child && !waitpid(child, &status, WNOHANG)) {
+		sleep(1);
 		if (kill(child, SIGKILL))
 			printf("kill: %s\n", strerror(errno));
 		wait(NULL);
