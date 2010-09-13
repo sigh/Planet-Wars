@@ -1,4 +1,6 @@
-CC=g++
+CC = g++
+CFLAGS = -Wall -g -O3
+OBJECTS = MyBot.o Planet.o PlanetWars.o Map.o
 
 all: MyBot
 
@@ -8,4 +10,9 @@ zip:
 clean:
 	rm -rf *.o MyBot *.zip
 
-MyBot: MyBot.o Planet.o PlanetWars.o Map.o
+MyBot: $(OBJECTS)
+		$(CC) $(CFLAGS) $(OBJECTS) -o  MyBot
+
+%.o: %.c
+		$(CC) $(CFLAGS) -c $<
+
