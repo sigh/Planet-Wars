@@ -300,6 +300,8 @@ int main(int argc, char *argv[]) {
     LOG_FILE.open("debug.log");
     LOG_FILE << "Start logging" << std::endl;
 
+    Config::Parse(argc, argv);
+
     while (true) {
         int c = std::cin.get();
         current_line += (char)c;
