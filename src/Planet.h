@@ -55,6 +55,7 @@ class Planet {
     int FutureOwner() const;
     int Cost( int days ) const;
     int FutureDays() const;
+    int WeightedIncoming() const;
 
  private:
     int planet_id_;
