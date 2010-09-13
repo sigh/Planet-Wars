@@ -11,6 +11,7 @@
 
 #include "Map.h"
 #include "Planet.h"
+#include "Config.h"
 
 #include <fstream>
 extern std::ofstream LOG_FILE;
@@ -67,15 +68,7 @@ class PlanetWars {
         // TODO: Implement this
         // int NumShips(int player_id) const;
 
-        // Sends a message to the game engine letting it know that you're done
-        // issuing orders for now.
-        void FinishTurn() const;
-
     private:
-        // Parses a game state from a string. On success, returns 1. On failure,
-        // returns 0.
-        int ParseGameState(const std::string& s);
-
         // Store all the planets and fleets. OMG we wouldn't wanna lose all the
         // planets and fleets, would we!?
         std::vector<Planet> planets_;
