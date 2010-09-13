@@ -1,6 +1,7 @@
 CC = g++
-CFLAGS = -Wall -g -O3
-OBJECTS = MyBot.o Planet.o PlanetWars.o Map.o
+CFLAGS = -g -O3 -DDEBUG
+SOURCES = MyBot.cc Planet.cc PlanetWars.cc Map.cc
+OBJECTS=$(SOURCES:.cc=.o)
 
 all: MyBot
 
@@ -13,6 +14,6 @@ clean:
 MyBot: $(OBJECTS)
 		$(CC) $(CFLAGS) $(OBJECTS) -o  MyBot
 
-%.o: %.c
+%.o: %.cc
 		$(CC) $(CFLAGS) -c $<
 

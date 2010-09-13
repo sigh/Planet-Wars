@@ -8,7 +8,12 @@
 #include <time.h>
 #include "PlanetWars.h"
 
+#ifdef DEBUG
 std::ofstream LOG_FILE;
+#define LOG(x) LOG_FILE << x; LOG_FILE.flush()
+#else
+#define LOG(x)
+#endif
 
 // The DoTurn function is where your code goes. The PlanetWars object contains
 // the state of the game, including information about all planets and fleets
@@ -298,8 +303,10 @@ int main(int argc, char *argv[]) {
     std::string map_data;
     int turn_number = 0;
 
+#ifdef DEBUG
     LOG_FILE.open("debug.log");
-    LOG_FILE << "Start logging" << std::endl;
+#endif
+    LOG( "Start logging" << std::endl );
 
     while (true) {
         int c = std::cin.get();
@@ -314,7 +321,7 @@ int main(int argc, char *argv[]) {
                 }
 
                 ++turn_number;
-                LOG_FILE << "== Turn " << turn_number << " ==" << std::endl;
+                LOG( "== Turn " << turn_number << " ==" << std::endl );
                 PlanetWars pw = ParseGameState(map_data);
                 // OMG how hacky... this is what passes for defence now
                 // TODO: Remove this when we have DESTINATION BASED processing
@@ -326,8 +333,7 @@ int main(int argc, char *argv[]) {
                 FinishTurn(pw);
                 map_data = "";
                 
-                LOG_FILE << "Time: " << ( (double)(clock() - init) / (double)CLOCKS_PER_SEC ) << std::endl;
-                LOG_FILE.flush();
+                LOG( "Time: " << ( (double)(clock() - init) / (double)CLOCKS_PER_SEC ) << std::endl );
             } else {
                 map_data += current_line;
             }
@@ -335,7 +341,9 @@ int main(int argc, char *argv[]) {
         }
     }
 
+#ifdef DEBUG
     LOG_FILE.close();
+#endif
 
     return 0;
 }
