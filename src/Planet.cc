@@ -41,6 +41,14 @@ int Planet::NumShips(int player_id) const {
     return num_ships;
 }
 
+int Planet::WeightedIncoming() const {
+    int ships = 0;
+    for ( int i=0; i < incoming_fleets_.size(); ++i ) {
+        ships += incoming_fleets_[i].first - incoming_fleets_[i].second;
+    }
+    return ships;
+}
+
 void Planet::Owner(int new_owner) {
     owner_ = new_owner;
 }

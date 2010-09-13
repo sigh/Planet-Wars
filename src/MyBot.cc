@@ -27,21 +27,20 @@ std::ofstream LOG_FILE;
 // http://www.ai-contest.com/resources.
 void DoTurn(PlanetWars& pw) {
 
-  // std::vector<Fleet> my_fleets = pw.MyFleets();
+  std::vector<Planet> my_planets = pw.MyPlanets();
 
-  // // defence
-  // std::vector<Fleet> enemy_fleets = pw.EnemyFleets();
-  // for ( int i=0; i < enemy_fleets.size(); ++i ) {
-  //   Planet& dest = pw.GetPlanet(enemy_fleets[i].DestinationPlanet());
-  //   if ( dest.Owner() == 1 ) {
-  //       dest.RemoveShips( enemy_fleets[i].NumShips() );
-  //   }
-  // }
+  // defence
+  for (int i = 0; i < my_planets.size(); ++i) {
+    Planet& p = my_planets[i];
+    int ships = p.WeightedIncoming();
+    if ( ships < 0 ) {
+        p.RemoveShips(-ships + 3);
+    }
+  }
 
   // (2) Find my strongest planet.
   int source = -1;
   int source_num_ships = 0;
-  std::vector<Planet> my_planets = pw.MyPlanets();
   for (int i = 0; i < my_planets.size(); ++i) {
     const Planet& p = my_planets[i];
     source = p.PlanetID();
