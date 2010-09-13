@@ -1,6 +1,6 @@
 CC = g++
 CFLAGS = -g -O3 -DDEBUG
-SOURCES = MyBot.cc Planet.cc PlanetWars.cc Map.cc
+SOURCES = MyBot.cc Planet.cc PlanetWars.cc Map.cc Config.cc
 OBJECTS=$(SOURCES:.cc=.o)
 
 all: MyBot

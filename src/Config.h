@@ -1,7 +1,7 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-namespace {
+namespace Config {
     void Parse(int argc, char*argv[]);
 }
 
