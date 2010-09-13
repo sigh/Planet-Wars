@@ -37,6 +37,10 @@ class Planet {
     // The number of ships on the planet. This is the "population" of the planet.
     int NumShips() const;
 
+    // The number of ships on the planet OR coming to the planet
+    // owned by given player
+    int NumShips(int player_id) const;
+
     // Use the following functions to set the properties of this planet. Note
     // that these functions only affect your program's copy of the game state.
     // You can't steal your opponent's planets just by changing the owner to 1

@@ -27,6 +27,20 @@ int Planet::NumShips() const {
     return num_ships_;
 }
 
+int Planet::NumShips(int player_id) const {
+    int num_ships = 0;
+    if ( owner_ == player_id ) {
+        num_ships = num_ships_;
+    }
+    for ( int i=0; i < incoming_fleets_.size(); ++i ) {
+        num_ships += player_id == 1 
+            ? incoming_fleets_[i].first
+            : incoming_fleets_[i].second;
+    }
+
+    return num_ships;
+}
+
 void Planet::Owner(int new_owner) {
     owner_ = new_owner;
 }
