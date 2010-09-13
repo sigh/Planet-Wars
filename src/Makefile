@@ -1,4 +1,7 @@
-CC=g++
+CC = g++
+CFLAGS = -g -O3 -DDEBUG
+SOURCES = MyBot.cc Planet.cc PlanetWars.cc Map.cc
+OBJECTS=$(SOURCES:.cc=.o)
 
 all: MyBot
 
@@ -8,4 +11,9 @@ zip:
 clean:
 	rm -rf *.o MyBot *.zip
 
-MyBot: MyBot.o Planet.o PlanetWars.o Map.o
+MyBot: $(OBJECTS)
+		$(CC) $(CFLAGS) $(OBJECTS) -o  MyBot
+
+%.o: %.cc
+		$(CC) $(CFLAGS) -c $<
+
