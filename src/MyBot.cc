@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
+#include <time.h>
 #include "PlanetWars.h"
 
 std::ofstream LOG_FILE;
@@ -305,6 +306,8 @@ int main(int argc, char *argv[]) {
         current_line += (char)c;
         if (c == '\n') {
             if (current_line.length() >= 2 && current_line.substr(0, 2) == "go") {
+                clock_t init=clock();
+
                 if ( turn_number == 0 ) {
                     // On the first turn we calculate the global map data
                     ParseMap(map_data);
@@ -322,6 +325,9 @@ int main(int argc, char *argv[]) {
                 }
                 FinishTurn(pw);
                 map_data = "";
+                
+                LOG_FILE << "Time: " << ( (double)(clock() - init) / (double)CLOCKS_PER_SEC ) << std::endl;
+                LOG_FILE.flush();
             } else {
                 map_data += current_line;
             }
