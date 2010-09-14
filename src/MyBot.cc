@@ -122,7 +122,8 @@ void DoTurn(PlanetWars& pw) {
           required_ships += 3;
 
           // ensure that we have enough ships to take over the planet.
-          if ( required_ships > (int)(source_num_ships * 0.75) ) {
+          // TODO: Determine best parameter
+          if ( required_ships > (int)(source_num_ships * 0.90) ) {
             continue;
           }
 
