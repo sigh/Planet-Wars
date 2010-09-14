@@ -29,9 +29,15 @@ void DoTurn(PlanetWars& pw) {
         continue;
     }
 
-    // -3 works slightly better than just 0
-    // TODO: Find the best number
-    p.RemoveShips(p.RequiredShips()-3);
+    int required_ships = p.RequiredShips();
+
+    if ( required_ships > 0 ) { 
+        // -3 works slightly better than just 0
+        // TODO: Find the best number
+        p.RemoveShips(required_ships-3);
+
+        LOG( " " << "Locking " << (required_ships - 3) << " ships on planet " << p.PlanetID() << endl );
+    }
   }
 
   // Expansion and attack
