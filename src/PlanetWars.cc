@@ -64,6 +64,28 @@ std::vector<Planet> PlanetWars::NotMyPlanets() const {
     return r;
 }
 
+int PlanetWars::Production(int player_id) const {
+    int production = 0;
+    for (int i = 0; i < planets_.size(); ++i) {
+        if ( planets_[i].Owner() == player_id ) { 
+            production += Map::GrowthRate(i);
+        }
+    }
+    return production;
+}
+
+int PlanetWars::Ships(int player_id) const {
+    int ships = 0;
+    for (int i = 0; i < planets_.size(); ++i) {
+        const Planet& p = planets_[i];
+        if ( p.Owner() == player_id ) { 
+            ships += p.NumShips();
+            // TODO add ships from fleets
+        }
+    }
+    return ships;
+}
+
 std::vector<Order> PlanetWars::Orders() const {
     return orders_;
 }

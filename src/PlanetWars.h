@@ -79,7 +79,7 @@ class PlanetWars {
 
         // Returns the number of ships that the given player has, either located
         // on planets or in flight.
-        int NumShips(int player_id) const;
+        int Ships(int player_id) const;
 
         // The total growth of all planets owned by a player
         int Production(int player_id) const;

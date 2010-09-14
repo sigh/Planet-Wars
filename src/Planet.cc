@@ -49,16 +49,9 @@ int Planet::WeightedIncoming() const {
     return ships;
 }
 
-void Planet::Owner(int new_owner) {
-    owner_ = new_owner;
-}
-
-void Planet::NumShips(int new_num_ships) {
-    num_ships_ = new_num_ships;
-}
-
 void Planet::AddShips(int amount) {
     num_ships_ += amount;
+    update_prediction_ = true;
 }
 
 void Planet::RemoveShips(int amount) {
@@ -66,6 +59,7 @@ void Planet::RemoveShips(int amount) {
     if ( num_ships_ < 0 ) {
         num_ships_ = 0;
     }
+    update_prediction_ = true;
 }
 
 void Planet::AddIncomingFleet(const Fleet &f) {
