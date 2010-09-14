@@ -68,23 +68,18 @@ void Planet::RemoveShips(int amount) {
     }
 }
 
-void Planet::AddIncomingFleet(
-    int owner,
-    int dest,
-    int ships,
-    int remaining
-) {
+void Planet::AddIncomingFleet(const Fleet &f) {
     // ensure incoming_fleets_ is long enough
-    if ( remaining + 1 > incoming_fleets_.size() ) {
-        incoming_fleets_.resize( remaining + 1, FleetSummary(0,0) );
+    if ( f.remaining + 1 > incoming_fleets_.size() ) {
+        incoming_fleets_.resize( f.remaining + 1, FleetSummary(0,0) );
     }
 
     // update fleet numbers
-    if ( owner == 1 ) {
-        incoming_fleets_[remaining].first += ships;
+    if ( f.owner == 1 ) {
+        incoming_fleets_[f.remaining].first += f.ships;
     }
     else {
-        incoming_fleets_[remaining].second += ships;
+        incoming_fleets_[f.remaining].second += f.ships;
     }
 
     update_prediction_ = true;

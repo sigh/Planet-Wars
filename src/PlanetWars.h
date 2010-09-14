@@ -27,6 +27,20 @@ struct Order {
             : source(source), dest(dest), ships(ships) {}
 };
 
+struct Fleet {
+    public:
+        int owner;
+        int dest;
+        int ships;
+        int remaining;
+        Fleet() {};
+        Fleet(int owner, const Order &o) : owner(owner) {
+            dest = o.dest;
+            ships = o.ships;
+            remaining = Map::Distance( o.source, o.dest );
+        }
+};
+
 class PlanetWars {
     public:
         PlanetWars(std::vector<Planet> planets);
@@ -61,12 +75,14 @@ class PlanetWars {
         // else your bot will get kicked and lose the game. For example, you must own
         // source_planet, and you can't send more ships than you actually have on
         // that planet.
-        void IssueOrder(Order order);
+        void IssueOrder(const Order& order);
 
         // Returns the number of ships that the given player has, either located
         // on planets or in flight.
-        // TODO: Implement this
-        // int NumShips(int player_id) const;
+        int NumShips(int player_id) const;
+
+        // The total growth of all planets owned by a player
+        int Production(int player_id) const;
 
     private:
         // Store all the planets and fleets. OMG we wouldn't wanna lose all the

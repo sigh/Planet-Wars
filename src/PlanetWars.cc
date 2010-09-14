@@ -68,14 +68,9 @@ std::vector<Order> PlanetWars::Orders() const {
     return orders_;
 }
 
-void PlanetWars::IssueOrder(Order order) {
+void PlanetWars::IssueOrder(const Order& order) {
     planets_[order.source].RemoveShips( order.ships );
-    planets_[order.dest].AddIncomingFleet(
-        1,
-        order.dest,
-        order.ships, 
-        Map::Distance( order.source, order.dest )
-    );
+    planets_[order.dest].AddIncomingFleet( Fleet( 1, order ) );
     orders_.push_back(order);
 }
 
