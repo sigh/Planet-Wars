@@ -266,6 +266,8 @@ void ParseMap(const std::string& game_state) {
             throw "Invalid object";
         }
     }
+
+    Map::Init();
 }
 
 void FinishTurn(const PlanetWars& pw) {

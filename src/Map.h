@@ -19,6 +19,9 @@ namespace Map {
 
     // Add a planet to the map
     void AddPlanet(int growth_rate, double x, double y);
+
+    // Initilise data structures in the map
+    void Init();
 }
 
 #endif
