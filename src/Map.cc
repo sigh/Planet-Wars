@@ -4,23 +4,54 @@
 namespace Map {
     std::vector<int> growth_rates_;
     std::vector< std::pair<double,double> > positions_;
+    std::vector< std::vector<int> > distances_;
+    int num_planets_;
 
     int GrowthRate(int planet) {
         return growth_rates_[planet];
     }
 
     int Distance(int source, int dest) {
-        double dx = positions_[source].first  - positions_[dest].first;
-        double dy = positions_[source].second - positions_[dest].second;
-        return (int)ceil(sqrt(dx * dx + dy * dy));
+        return distances_[source][dest];
     }
 
     int NumPlanets() {
-        return growth_rates_.size();
+        return num_planets_;
     }
 
     void AddPlanet(int growth_rate, double x, double y) {
         growth_rates_.push_back(growth_rate);
         positions_.push_back( std::pair<double,double>(x,y) );
     }
+
+
+    // Initialise state
+    // ================
+
+    void InitDistances() {
+        // Ensure distance matrix can hold all planets
+        distances_.resize(num_planets_);
+
+        // calculate distances
+        for ( int i=0; i<num_planets_; ++i) {
+            distances_[i].resize(num_planets_);
+
+            double i_x = positions_[i].first;
+            double i_y = positions_[i].second;
+
+            distances_[i][i] = 0;
+            for ( int j=0; j<i; ++j) {
+                double dx = i_x - positions_[j].first;
+                double dy = i_y - positions_[j].second;
+                distances_[i][j] = distances_[j][i] = (int)ceil(sqrt(dx * dx + dy * dy));
+            }
+        }
+    }
+
+    void Init() {
+        num_planets_ = positions_.size();
+
+        InitDistances();
+    }
+
 }
