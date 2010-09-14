@@ -1,10 +1,13 @@
 #include <cmath>
+#include <vector>
+#include <algorithm>
 #include "Map.h"
 
 namespace Map {
     std::vector<int> growth_rates_;
     std::vector< std::pair<double,double> > positions_;
     std::vector< std::vector<int> > distances_;
+    std::vector< std::vector<int> > planets_by_distance_;
     int num_planets_;
 
     int GrowthRate(int planet) {
@@ -22,8 +25,12 @@ namespace Map {
     void AddPlanet(int growth_rate, double x, double y) {
         growth_rates_.push_back(growth_rate);
         positions_.push_back( std::pair<double,double>(x,y) );
+        ++num_planets_;
     }
 
+    std::vector<int> PlanetsByDistance(int planet) {
+        return planets_by_distance_[planet];
+    }
 
     // Initialise state
     // ================
@@ -48,10 +55,34 @@ namespace Map {
         }
     }
 
-    void Init() {
-        num_planets_ = positions_.size();
+    // compare planets by distances to the given source planet
+    struct ComparePlanetsByDistance {
+        std::vector<int>& d_;
+        ComparePlanetsByDistance(int planet) : d_(distances_[planet]) {}
+        bool operator()(int a, int b) { return d_[a] < d_[b]; }
+    };
 
+    void InitPlanetsByDistance() {
+        planets_by_distance_.resize(num_planets_);
+
+        for ( int i=0; i<num_planets_; ++i ) {
+            // initialise array with planet ids
+            planets_by_distance_[i].resize(num_planets_);
+            for ( int j=0; j<num_planets_; ++j) {
+                planets_by_distance_[i][j] = j;
+            }
+
+            std::sort( 
+                planets_by_distance_[i].begin(),
+                planets_by_distance_[i].end(),
+                ComparePlanetsByDistance(i)
+            );
+        }
+    }
+
+    void Init() {
         InitDistances();
+        InitPlanetsByDistance();
     }
 
 }

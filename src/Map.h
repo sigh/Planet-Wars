@@ -17,6 +17,9 @@ namespace Map {
     // Returns the number of planets on the map
     int NumPlanets();
 
+    // return a vector of planet ids by distance from the given source
+    std::vector<int> PlanetsByDistance(int planet);
+
     // Add a planet to the map
     void AddPlanet(int growth_rate, double x, double y);
 
