@@ -25,13 +25,16 @@ void DoTurn(PlanetWars& pw) {
   // defence
   for (int i = 0; i < my_planets.size(); ++i) {
     Planet& p = my_planets[i];
-    int ships = p.WeightedIncoming();
-    if ( ships < 0 ) {
-        p.RemoveShips(-ships + 3);
+    if ( p.FutureOwner() != ME ) {
+        continue;
     }
+
+    // -3 works slightly better than just 0
+    // TODO: Find the best number
+    p.RemoveShips(p.RequiredShips()-3);
   }
 
-  // (2) Find my strongest planet.
+  // Expansion and attack
   int source = -1;
   int source_num_ships = 0;
   for (int i = 0; i < my_planets.size(); ++i) {

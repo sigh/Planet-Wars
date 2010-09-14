@@ -154,19 +154,19 @@ void Planet::UpdatePrediction() const {
         }
 
         // FIGHT
-        if ( state.owner == 1 ) {
+        if ( state.owner == ME ) {
             // my planet
             state.ships += f.first - f.second;
             if ( state.ships < 0 ) {
-                state.owner = 2;
+                state.owner = ENEMY;
                 state.ships = -state.ships;
             }
         }
-        else if ( state.owner == 2 ) {
+        else if ( state.owner == ENEMY ) {
             // enemy planet
             state.ships += f.second - f.first;
             if ( state.ships < 0 ) {
-                state.owner = 1;
+                state.owner = ME;
                 state.ships = -state.ships;
             }
         }
@@ -182,10 +182,10 @@ void Planet::UpdatePrediction() const {
             if ( state.ships > 0 ) {
                 // if there was a winner, determine who it was
                 if ( sort_states[2] == f.first ) {
-                    state.owner = 1;
+                    state.owner = ME;
                 }
                 else if ( sort_states[2] == f.second ) {
-                    state.owner = 2;
+                    state.owner = ENEMY;
                 }
             }
         }
@@ -195,6 +195,25 @@ void Planet::UpdatePrediction() const {
     }
 
     update_prediction_ = false;
+}
+
+// number of ships required by player ME to keep this planet
+// TODO: Make it work with any owner
+int Planet::RequiredShips() const {
+    int ships_delta = 0;
+    int required_ships = 0;
+    int growth_rate = Map::GrowthRate( planet_id_ );
+
+    for ( int day=1; day < incoming_fleets_.size(); ++day ) {
+        const FleetSummary &f = incoming_fleets_[day];
+        ships_delta += growth_rate + f.first - f.second;
+        if ( ships_delta < 0 ) {
+            required_ships += -ships_delta;
+            ships_delta = 0; 
+        }
+    }
+
+    return required_ships;
 }
 
 
