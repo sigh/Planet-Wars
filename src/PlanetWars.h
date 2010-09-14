@@ -16,6 +16,10 @@
 #include <fstream>
 extern std::ofstream LOG_FILE;
 
+const int NEUTRAL = 0;
+const int ME = 1;
+const int ENEMY = 2;
+
 class Planet;
 
 struct Order {
