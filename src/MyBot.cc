@@ -37,7 +37,7 @@ void DoTurn(PlanetWars& pw) {
   for (int i = 0; i < my_planets.size(); ++i) {
     const Planet& p = my_planets[i];
     source = p.PlanetID();
-    source_num_ships = p.NumShips();
+    source_num_ships = p.Ships();
 
       // (3) Find the weakest enemy or neutral planet.
       int dest = -1;
