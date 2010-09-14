@@ -1,6 +1,9 @@
 # Current exe
 src/MyBot
 
+# tcp prog
+tcp/tcp
+
 # object files
 *.o
 
