@@ -8,23 +8,16 @@
 #include <time.h>
 #include "PlanetWars.h"
 
+using std::endl;
 #ifdef DEBUG
 std::ofstream LOG_FILE;
-#define LOG(x) LOG_FILE << x; LOG_FILE.flush()
+#define LOG(x) LOG_FILE << x
+#define LOG_FLUSH() LOG_FILE.flush()
 #else
 #define LOG(x)
+#define LOG_FLUSH()
 #endif
 
-// The DoTurn function is where your code goes. The PlanetWars object contains
-// the state of the game, including information about all planets and fleets
-// that currently exist. Inside this function, you issue orders using the
-// pw.IssueOrder() function. For example, to send 10 ships from planet 3 to
-// planet 8, you would say pw.IssueOrder(3, 8, 10).
-//
-// There is already a basic strategy in place here. You can use it as a
-// starting point, or you can throw it out entirely and replace it with your
-// own. Check out the tutorials and articles on the contest website at
-// http://www.ai-contest.com/resources.
 void DoTurn(PlanetWars& pw) {
 
   std::vector<Planet> my_planets = pw.MyPlanets();
@@ -272,29 +265,41 @@ void ParseMap(const std::string& game_state) {
 
 void FinishTurn(const PlanetWars& pw) {
     std::vector<Order> orders = pw.Orders();
+    int num_ships = 0;
 
     // issue all the orders
     for ( int i=0; i < orders.size(); ++i ) {
         const Order &o = orders[i];
 
-        if ( o.source == o.dest ) {
-            // ensure we don't send ships to same planet
-            continue;
-        }
-        else if ( o.ships <= 0 ) {
+        if ( o.source == o.dest || o.ships <= 0 ) {
             // ensure that the number of ships is positive
             continue;
         }
 
         std::cout << o.source << " "
             << o.dest << " "
-            << o.ships << std::endl;
+            << o.ships << endl;
         std::cout.flush();
+
+        num_ships += o.ships;
     }
 
     // finish up
-    std::cout << "go" << std::endl;
+    std::cout << "go" << endl;
     std::cout.flush();
+
+    // Log AFTER we have sent the command (wastes less time)
+    LOG( orders.size() << " Orders (" << num_ships << " ships):" << endl );
+
+    for ( int i=0; i < orders.size(); ++i ) {
+        const Order &o = orders[i];
+
+        if ( o.source == o.dest || o.ships <= 0 ) {
+            LOG( "INVALID ORDER: " ); 
+        }
+
+        LOG( o.source << "->" << o.dest << " (" << o.ships << " ships)" << endl );
+    }
 }
 
 // This is just the main game loop that takes care of communicating with the
@@ -318,12 +323,13 @@ int main(int argc, char *argv[]) {
             if (current_line.length() >= 2 && current_line.substr(0, 2) == "go") {
                 clock_t init=clock();
 
-                if ( turn_number == 0 ) {
+                ++turn_number;
+
+                if ( turn_number == 1 ) {
                     // On the first turn we calculate the global map data
                     ParseMap(map_data);
                 }
 
-                ++turn_number;
                 LOG( "== Turn " << turn_number << " ==" << std::endl );
                 PlanetWars pw = ParseGameState(map_data);
                 // OMG how hacky... this is what passes for defence now
@@ -337,6 +343,7 @@ int main(int argc, char *argv[]) {
                 map_data = "";
                 
                 LOG( "Time: " << ( (double)(clock() - init) / (double)CLOCKS_PER_SEC ) << std::endl );
+                LOG_FLUSH();
             } else {
                 map_data += current_line;
             }
