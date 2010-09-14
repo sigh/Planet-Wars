@@ -58,6 +58,8 @@ class Planet {
     int FutureDays() const;
     int WeightedIncoming() const;
 
+    int RequiredShips() const;
+
  private:
     int planet_id_;
     int owner_;
