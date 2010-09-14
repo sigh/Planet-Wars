@@ -318,8 +318,13 @@ int main(int argc, char *argv[]) {
                     ParseMap(map_data);
                 }
 
-                LOG( "== Turn " << turn_number << " ==" << std::endl );
                 PlanetWars pw = ParseGameState(map_data);
+
+                LOG( "== Turn " << turn_number << " ==" << endl );
+
+                LOG( "ME:    " << pw.Ships(ME) << "/" << pw.Production(ME) << endl ); 
+                LOG( "ENEMY: " << pw.Ships(ENEMY) << "/" << pw.Production(ENEMY) << endl ); 
+
                 // OMG how hacky... this is what passes for defence now
                 // TODO: Remove this when we have DESTINATION BASED processing
                 DoTurn(pw);
