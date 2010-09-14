@@ -172,16 +172,9 @@ const int FLEET_DEST = 4;
 const int FLEET_LENGTH = 5;
 const int FLEET_REMAINING = 6;
 
-struct TempFleet {
-    int owner;
-    int dest;
-    int ships;
-    int remaining;
-};
-
 PlanetWars ParseGameState(const std::string& game_state) {
     std::vector<Planet> planets;
-    std::vector<TempFleet> fleets;
+    std::vector<Fleet> fleets;
     std::vector<std::string> lines = StringUtil::Tokenize(game_state, "\n");
     int planet_id = 0;
     for (unsigned int i = 0; i < lines.size(); ++i) {
@@ -207,7 +200,7 @@ PlanetWars ParseGameState(const std::string& game_state) {
             if (tokens.size() != 7) {
                 throw "Invalid fleet";
             }
-            TempFleet f;
+            Fleet f;
             f.owner = atoi(tokens[FLEET_OWNER].c_str()); 
             f.dest = atoi(tokens[FLEET_DEST].c_str()); 
             f.ships = atoi(tokens[FLEET_SHIPS].c_str()); 
@@ -220,13 +213,8 @@ PlanetWars ParseGameState(const std::string& game_state) {
 
     // inform planets about fleets
     for (int i = 0; i < fleets.size(); ++i) {
-        const TempFleet& f = fleets[i];
-        planets[ f.dest ].AddIncomingFleet(
-            f.owner,
-            f.dest,
-            f.ships,
-            f.remaining
-        );
+        const Fleet& f = fleets[i];
+        planets[ f.dest ].AddIncomingFleet(f);
     }
 
     return PlanetWars(
