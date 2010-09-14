@@ -77,11 +77,7 @@ int PlanetWars::Production(int player_id) const {
 int PlanetWars::Ships(int player_id) const {
     int ships = 0;
     for (int i = 0; i < planets_.size(); ++i) {
-        const Planet& p = planets_[i];
-        if ( p.Owner() == player_id ) { 
-            ships += p.NumShips();
-            // TODO add ships from fleets
-        }
+        ships += planets_[i].TotalShips(player_id);
     }
     return ships;
 }
