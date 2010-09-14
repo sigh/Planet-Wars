@@ -45,8 +45,6 @@ class Planet {
     // that these functions only affect your program's copy of the game state.
     // You can't steal your opponent's planets just by changing the owner to 1
     // using the Owner(int) function! :-)
-    void Owner(int new_owner);
-    void NumShips(int new_num_ships);
     void AddShips(int amount);
     void RemoveShips(int amount);
 
