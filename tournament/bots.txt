@@ -2,8 +2,9 @@ Current src/MyBot
 PSimple3 bot/PSimple3
 #PCost bot/PCost
 #PCost3 bot/PCost3
-PCost4 bot/PCost4
+#PCost4 bot/PCost4
 PCost5 bot/PCost5
+PCost6Lock bot/PCost6Lock
 # *Dual java -jar example_bots/DualBot.jar
 # *Rage java -jar example_bots/RageBot.jar
 
