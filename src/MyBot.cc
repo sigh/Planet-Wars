@@ -73,6 +73,32 @@ void DoTurn(PlanetWars& pw) {
             continue;
         }
 
+        // # TODO: Put this back in once we have have proper allocation of attacks
+        // if ( future_owner == NEUTRAL ) {
+        //     // For neutral planets check if they are closer to the enemy
+
+        //     // find the closest enemy
+        //     const std::vector<int>& sorted = Map::PlanetsByDistance( p.PlanetID() );
+        //     int closest_enemy = -1; 
+        //     for (int i=1; i < sorted.size(); ++i) {
+        //         if ( pw.GetPlanet(sorted[i]).Owner() == ENEMY ) {
+        //             closest_enemy = sorted[i];
+        //             break;
+        //         }
+        //     }
+        //     int closest_me = -1; 
+        //     for (int i=1; i < sorted.size(); ++i) {
+        //         if ( pw.GetPlanet(sorted[i]).Owner() == ME ) {
+        //             closest_me = sorted[i];
+        //             break;
+        //         }
+        //     }
+
+        //     if ( closest_enemy >= 0 && Map::Distance( closest_enemy, p.PlanetID() ) <= Map::Distance( closest_me, p.PlanetID() ) ) {
+        //         continue;
+        //     }
+        // }
+
         // Estimate the number of days required to break even after capturing a planet
         int score = 99999;
         int delay = 0;
@@ -329,7 +355,7 @@ int main(int argc, char *argv[]) {
     int turn_number = 0;
 
 #ifdef DEBUG
-    LOG_FILE.open("debug_2.log");
+    LOG_FILE.open("debug_3.log");
 #endif
     LOG( "Start logging" << std::endl );
 
