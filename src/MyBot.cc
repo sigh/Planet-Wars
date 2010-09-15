@@ -25,13 +25,17 @@ void DoTurn(PlanetWars& pw) {
   // defence
   for (int i = 0; i < my_planets.size(); ++i) {
     Planet& p = my_planets[i];
-    if ( p.FutureOwner() != ME ) {
-        continue;
-    }
+    // if ( p.FutureOwner() != ME ) {
+    //     continue;
+    // }
+    
+    // TODO: IF this is an important planet then we must protect
+    // Else we can run away if AFTER all order have been issued we are still 
+    // under attack
 
     int required_ships = p.RequiredShips();
 
-    if ( required_ships > 0 ) { 
+    if ( required_ships > 3 ) { 
         // -3 works slightly better than just 0
         // TODO: Find the best number
         p.RemoveShips(required_ships-3);
@@ -140,7 +144,7 @@ void DoTurn(PlanetWars& pw) {
 
           // ensure that we have enough ships to take over the planet.
           // TODO: Determine best parameter
-          if ( required_ships <= 0 || required_ships > (int)(source_num_ships * 0.90) ) {
+          if ( required_ships <= 0 || required_ships > (int)(source_num_ships* 0.90) ) {
             continue;
           }
 
@@ -325,7 +329,7 @@ int main(int argc, char *argv[]) {
     int turn_number = 0;
 
 #ifdef DEBUG
-    LOG_FILE.open("debug_1.log");
+    LOG_FILE.open("debug_2.log");
 #endif
     LOG( "Start logging" << std::endl );
 
