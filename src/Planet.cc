@@ -70,18 +70,20 @@ void Planet::RemoveShips(int amount) {
     update_prediction_ = true;
 }
 
-void Planet::AddIncomingFleet(const Fleet &f) {
+void Planet::AddIncomingFleet(const Fleet &f, int delay) {
+    int arrival = f.remaining + delay;
+
     // ensure incoming_fleets_ is long enough
-    if ( f.remaining + 1 > incoming_fleets_.size() ) {
-        incoming_fleets_.resize( f.remaining + 1, FleetSummary(0,0) );
+    if ( arrival + 1 > incoming_fleets_.size() ) {
+        incoming_fleets_.resize( arrival + 1, FleetSummary(0,0) );
     }
 
     // update fleet numbers
     if ( f.owner == 1 ) {
-        incoming_fleets_[f.remaining].first += f.ships;
+        incoming_fleets_[arrival].first += f.ships;
     }
     else {
-        incoming_fleets_[f.remaining].second += f.ships;
+        incoming_fleets_[arrival].second += f.ships;
     }
 
     update_prediction_ = true;
@@ -107,14 +109,49 @@ PlanetState Planet::FutureState(int days) const {
 // Future owner is player 2
 int Planet::Cost( int days ) const {
     if ( days >= prediction_.size() ) {
-        return FutureState( days ).ships; 
+        PlanetState state = FutureState(days);
+        return state.owner == ME ? 0 : state.ships + 1;
     }
 
-    int ships_required = prediction_[days].ships;
+    int ships_delta = 0;
+    int required_ships = 0;
+    int growth_rate = Map::GrowthRate( planet_id_ );
+    int prev_owner = days == 0 ? owner_ : prediction_[days-1].owner;
+
+    if ( prediction_[days].owner == ME )  {
+        ships_delta = prediction_[days].ships;
+    }
+    else if ( prediction_[days].owner == NEUTRAL ) {
+        // before anything else we need to ships to overcome the existing force
+        required_ships = prediction_[days].ships + 1;
+
+        const FleetSummary &f = incoming_fleets_[days];
+        if ( f.first < f.second ) {
+            // If there is another attacking force (larger than us)
+            // we need to overcome that one too
+            required_ships += f.second - f.first;
+        }
+    }
+    else if ( prev_owner == NEUTRAL ) {
+        // opponent just took neutral with this move
+        const FleetSummary &f = incoming_fleets_[days];
+        required_ships = f.second - f.first + 1;
+    }
+    else {
+        required_ships = prediction_[days].ships + 1;
+    }
+
+    // TODO: Merge with required ships
     for ( int i = days+1; i < incoming_fleets_.size(); ++i ) {
-        ships_required += incoming_fleets_[i].second - incoming_fleets_[i].first;
+        const FleetSummary &f = incoming_fleets_[i];
+        ships_delta += growth_rate + f.first - f.second;
+        if ( ships_delta < 0 ) {
+            required_ships += -ships_delta;
+            ships_delta = 0; 
+        }
     }
 
+    return required_ships;
 }
 
 // return the number of days until the last fleet has arrived

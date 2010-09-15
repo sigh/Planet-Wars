@@ -99,18 +99,33 @@ void DoTurn(PlanetWars& pw) {
             // hard case: we can arrive before some other ships
             // we know that this planet is (or will be) eventually be owned 
             // by an enemy
-            cost = p.Cost(days);
-            score = ceil((double)cost/growth_rate/2.0) + days; 
+            int best_score = 99999;
+            int best_cost = 0;
+
             // determine the best day to arrive on
-            // for ( int arrive = days; arrive <= future_days; ++arrive ) {
-            //     int result = p.Cost( arrive ); 
-            // }
+            for ( int arrive = future_days; arrive >= days; --arrive ) {
+                // TODO: Another magic param 
+                cost = p.Cost( arrive ) + 5; 
+
+                score = (int)ceil((double)cost/growth_rate/2.0) + arrive; 
+                if ( score < best_score ) {
+                    best_score = score;
+                    delay = arrive - days;
+                    best_cost = cost;
+                }
+            }
+            score = best_score;
+            cost = best_cost;
+            // cost = p.Cost( days ) + 3; 
+            //
+            // score = (int)ceil((double)cost/growth_rate/2.0) + days; 
         }
 
         if (score < dest_score) {
           dest_score = score;
           dest = p.PlanetID();
           required_ships = cost;
+          dest_delay = delay;
         }
       }
 
@@ -121,17 +136,19 @@ void DoTurn(PlanetWars& pw) {
           // determine the number of ships required to take over the planet
           required_ships += 3;
 
+          required_ships -= dest_delay * Map::GrowthRate(source);
+
           // ensure that we have enough ships to take over the planet.
           // TODO: Determine best parameter
-          if ( required_ships > (int)(source_num_ships * 0.90) ) {
+          if ( required_ships <= 0 || required_ships > (int)(source_num_ships * 0.90) ) {
             continue;
           }
 
-          // (4) Send half the ships from my strongest planet to the weakest
-          // planet that I do not own.
-            int num_ships = required_ships;
-            pw.IssueOrder(Order( source, dest, num_ships ));
+          if ( dest_delay > 0 ) {
+            LOG( "  DELAYED ORDER: " << source << " " << dest << " " << required_ships << " | " << dest_delay << endl);
           }
+          pw.IssueOrder(Order( source, dest, required_ships ), dest_delay);
+        }
     }
 }
 
@@ -308,7 +325,7 @@ int main(int argc, char *argv[]) {
     int turn_number = 0;
 
 #ifdef DEBUG
-    LOG_FILE.open("debug.log");
+    LOG_FILE.open("debug_1.log");
 #endif
     LOG( "Start logging" << std::endl );
 

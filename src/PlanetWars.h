@@ -28,7 +28,12 @@ struct Order {
         int dest;
         int ships;
         Order(int source, int dest, int ships)
-            : source(source), dest(dest), ships(ships) {}
+            : source(source), dest(dest), ships(ships) {
+                // TODO: Warn and log error about empty order
+            if  (ships < 0) {
+                ships = 0;
+            }
+       }
 };
 
 struct Fleet {
@@ -79,7 +84,7 @@ class PlanetWars {
         // else your bot will get kicked and lose the game. For example, you must own
         // source_planet, and you can't send more ships than you actually have on
         // that planet.
-        void IssueOrder(const Order& order);
+        void IssueOrder(const Order& order, int delay=0);
 
         // Returns the number of ships that the given player has, either located
         // on planets or in flight.
