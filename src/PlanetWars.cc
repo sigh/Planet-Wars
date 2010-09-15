@@ -86,9 +86,13 @@ std::vector<Order> PlanetWars::Orders() const {
     return orders_;
 }
 
-void PlanetWars::IssueOrder(const Order& order) {
+void PlanetWars::IssueOrder(const Order& order, int delay) {
     planets_[order.source].RemoveShips( order.ships );
-    planets_[order.dest].AddIncomingFleet( Fleet( 1, order ) );
-    orders_.push_back(order);
+    planets_[order.dest].AddIncomingFleet( Fleet( ME, order ), delay );
+
+    // only execute order if it is for now
+    if ( delay == 0 ) {
+        orders_.push_back(order);
+    }
 }
 
