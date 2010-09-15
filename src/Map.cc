@@ -28,7 +28,7 @@ namespace Map {
         ++num_planets_;
     }
 
-    std::vector<int> PlanetsByDistance(int planet) {
+    const std::vector<int>& PlanetsByDistance(int planet) {
         return planets_by_distance_[planet];
     }
 
