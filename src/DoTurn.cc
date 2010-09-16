@@ -140,7 +140,7 @@ if ( turn > prev_turn ) {
 
           // ensure that we have enough ships to take over the planet.
           // TODO: Determine best parameter
-          if ( required_ships <= 0 || required_ships > (int)(source_num_ships* 0.90) ) {
+          if ( required_ships <= 0 || required_ships > (int)(source_num_ships) ) {
             continue;
           }
 
