@@ -43,31 +43,30 @@ if ( turn > prev_turn ) {
             continue;
         }
 
-        // # TODO: Put this back in once we have have proper allocation of attacks
-        // if ( future_owner == NEUTRAL ) {
-        //     // For neutral planets check if they are closer to the enemy
+        // If a neutral planet is closer to an enemy then ignore it
+        if ( future_owner == NEUTRAL ) {
 
-        //     // find the closest enemy
-        //     const std::vector<int>& sorted = Map::PlanetsByDistance( p.PlanetID() );
-        //     int closest_enemy = -1; 
-        //     for (int i=1; i < sorted.size(); ++i) {
-        //         if ( pw.GetPlanet(sorted[i]).Owner() == ENEMY ) {
-        //             closest_enemy = sorted[i];
-        //             break;
-        //         }
-        //     }
-        //     int closest_me = -1; 
-        //     for (int i=1; i < sorted.size(); ++i) {
-        //         if ( pw.GetPlanet(sorted[i]).Owner() == ME ) {
-        //             closest_me = sorted[i];
-        //             break;
-        //         }
-        //     }
+            // find the closest enemy
+            const std::vector<int>& sorted = Map::PlanetsByDistance( p->PlanetID() );
+            int closest_enemy = -1; 
+            for (int i=1; i < sorted.size(); ++i) {
+                if ( pw.GetPlanet(sorted[i])->Owner() == ENEMY ) {
+                    closest_enemy = sorted[i];
+                    break;
+                }
+            }
+            int closest_me = -1; 
+            for (int i=1; i < sorted.size(); ++i) {
+                if ( pw.GetPlanet(sorted[i])->Owner() == ME ) {
+                    closest_me = sorted[i];
+                    break;
+                }
+            }
 
-        //     if ( closest_enemy >= 0 && Map::Distance( closest_enemy, p.PlanetID() ) <= Map::Distance( closest_me, p.PlanetID() ) ) {
-        //         continue;
-        //     }
-        // }
+            if ( closest_enemy >= 0 && Map::Distance( closest_enemy, p->PlanetID() ) <= Map::Distance( closest_me, p->PlanetID() ) ) {
+                continue;
+            }
+        }
 
         // Estimate the number of days required to break even after capturing a planet
         int score = 99999;
