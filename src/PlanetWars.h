@@ -63,29 +63,17 @@ struct Fleet {
 
 class PlanetWars {
     public:
-        PlanetWars(std::vector<Planet> planets);
+        PlanetWars(std::vector<PlanetPtr> planets);
 
         // Returns the planet with the given planet_id. There are NumPlanets()
         // planets. They are numbered starting at 0.
-        Planet& GetPlanet(int planet_id);
+        PlanetPtr GetPlanet(int planet_id);
 
         // Returns a list of all the planets.
-        std::vector<Planet> Planets() const;
+        std::vector<PlanetPtr> Planets() const;
 
-        // Return a list of all the planets owned by the current player. By
-        // convention, the current player is always player number 1.
-        std::vector<Planet> MyPlanets() const;
-
-        // Return a list of all neutral planets.
-        std::vector<Planet> NeutralPlanets() const;
-
-        // Return a list of all the planets owned by rival players. This excludes
-        // planets owned by the current player, as well as neutral planets.
-        std::vector<Planet> EnemyPlanets() const;
-
-        // Return a list of all the planets that are not owned by the current
-        // player. This includes all enemy planets and neutral planets.
-        std::vector<Planet> NotMyPlanets() const;
+        std::vector<PlanetPtr> PlanetsOwnedBy(int player) const;
+        std::vector<PlanetPtr> PlanetsNotOwnedBy(int player) const;
 
         // Return a list of the currently pending orders 
         std::vector<Order> Orders() const;
@@ -107,7 +95,7 @@ class PlanetWars {
     private:
         // Store all the planets and fleets. OMG we wouldn't wanna lose all the
         // planets and fleets, would we!?
-        std::vector<Planet> planets_;
+        std::vector<PlanetPtr> planets_;
         std::vector<Order> orders_;
 };
 

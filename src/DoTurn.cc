@@ -5,36 +5,40 @@
 
 void Defence(PlanetWars& pw);
 
-void DoTurn(PlanetWars& pw) {
+void DoTurn(PlanetWars& pw, int turn) {
+    static int prev_turn = -1;
+if ( turn > prev_turn ) {
   Defence(pw);
+  prev_turn = turn;
+}
 
-  std::vector<Planet> my_planets = pw.MyPlanets();
+  std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
 
   // Expansion and attack
   int source = -1;
   int source_num_ships = 0;
   for (int i = 0; i < my_planets.size(); ++i) {
-    const Planet& p = my_planets[i];
-    source = p.PlanetID();
-    source_num_ships = p.Ships();
+    const PlanetPtr p = my_planets[i];
+    source = p->PlanetID();
+    source_num_ships = p->Ships();
 
       // (3) Find the weakest enemy or neutral planet.
       int dest = -1;
       int dest_score = 999999;
       int dest_delay = 0;
         int required_ships = 0;
-      std::vector<Planet> planets = pw.MyPlanets(); // TODO: Use projected ownership instead
-      std::vector<Planet> notmyplanets = pw.NotMyPlanets(); // TODO: Use projected ownership instead
+      std::vector<PlanetPtr> planets = pw.PlanetsOwnedBy(ME); // TODO: Use projected ownership instead
+      std::vector<PlanetPtr> notmyplanets = pw.PlanetsNotOwnedBy(ME); // TODO: Use projected ownership instead
       planets.insert(planets.end(), notmyplanets.begin(), notmyplanets.end()); 
       for (int i = 0; i < planets.size(); ++i) {
-        const Planet& p = planets[i];
-        int growth_rate = Map::GrowthRate(p.PlanetID());
+        const PlanetPtr p = planets[i];
+        int growth_rate = Map::GrowthRate(p->PlanetID());
         if ( growth_rate == 0 ) {
             continue;
         }
 
         // Don't need to do anything if we will own the planet
-        int future_owner = p.FutureOwner();
+        int future_owner = p->FutureOwner();
         if ( future_owner == 1) {
             continue;
         }
@@ -70,11 +74,11 @@ void DoTurn(PlanetWars& pw) {
         int delay = 0;
         int cost = 0;
 
-        int days = Map::Distance( p.PlanetID(), source );
-        int future_days = p.FutureDays();
+        int days = Map::Distance( p->PlanetID(), source );
+        int future_days = p->FutureDays();
         if ( days > future_days ) {
             // easy case: we arrive after all the other fleets
-            PlanetState prediction = p.FutureState( days );
+            PlanetState prediction = p->FutureState( days );
             cost = prediction.ships;
             if ( future_owner ) {
                 // For an enemy planet:
@@ -101,7 +105,7 @@ void DoTurn(PlanetWars& pw) {
             // determine the best day to arrive on
             for ( int arrive = future_days; arrive >= days; --arrive ) {
                 // TODO: Another magic param 
-                cost = p.Cost( arrive ) + 5; 
+                cost = p->Cost( arrive ) + 5; 
 
                 score = (int)ceil((double)cost/growth_rate/2.0) + arrive; 
                 if ( score < best_score ) {
@@ -119,7 +123,7 @@ void DoTurn(PlanetWars& pw) {
 
         if (score < dest_score) {
           dest_score = score;
-          dest = p.PlanetID();
+          dest = p->PlanetID();
           required_ships = cost;
           dest_delay = delay;
         }
@@ -149,10 +153,10 @@ void DoTurn(PlanetWars& pw) {
 }
 
 void Defence(PlanetWars& pw) {
-    std::vector<Planet> my_planets = pw.MyPlanets();
+    std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
 
     for (int i = 0; i < my_planets.size(); ++i) {
-        Planet& p = my_planets[i];
+        PlanetPtr p = my_planets[i];
         // if ( p.FutureOwner() != ME ) {
         //     continue;
         // }
@@ -161,14 +165,14 @@ void Defence(PlanetWars& pw) {
         // Else we can run away if AFTER all order have been issued we are still 
         // under attack
 
-        int required_ships = p.RequiredShips();
+        int required_ships = p->RequiredShips();
 
         if ( required_ships > 3 ) { 
             // -3 works slightly better than just 0
             // TODO: Find the best number
-            p.RemoveShips(required_ships-3);
+            p->RemoveShips(required_ships-3);
 
-            LOG( " " << "Locking " << (required_ships - 3) << " ships on planet " << p.PlanetID() << std::endl );
+            LOG( " " << "Locking " << (required_ships - 3) << " ships on planet " << p->PlanetID() << std::endl );
         }
     }
 }

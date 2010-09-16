@@ -61,7 +61,7 @@ const int FLEET_LENGTH = 5;
 const int FLEET_REMAINING = 6;
 
 PlanetWars ParseGameState(const std::string& game_state) {
-    std::vector<Planet> planets;
+    std::vector<PlanetPtr> planets;
     std::vector<Fleet> fleets;
     std::vector<std::string> lines = StringUtil::Tokenize(game_state, "\n");
     int planet_id = 0;
@@ -79,10 +79,11 @@ PlanetWars ParseGameState(const std::string& game_state) {
             if (tokens.size() != 6) {
                 throw "Invalid planet";
             }
-            Planet p(
-                    planet_id++,              // The ID of this planet
-                    atoi(tokens[PLANET_OWNER].c_str()),  // Owner
-                    atoi(tokens[PLANET_SHIPS].c_str())); // Num ships
+            PlanetPtr p( new Planet(
+                planet_id++, // The ID of this planet
+                atoi(tokens[PLANET_OWNER].c_str()),
+                atoi(tokens[PLANET_SHIPS].c_str())
+            ));
             planets.push_back(p);
         } else if (tokens[0] == "F") {
             if (tokens.size() != 7) {
@@ -102,12 +103,10 @@ PlanetWars ParseGameState(const std::string& game_state) {
     // inform planets about fleets
     for (int i = 0; i < fleets.size(); ++i) {
         const Fleet& f = fleets[i];
-        planets[ f.dest ].AddIncomingFleet(f);
+        planets[ f.dest ]->AddIncomingFleet(f);
     }
 
-    return PlanetWars(
-        planets
-    );
+    return PlanetWars( planets );
 }
 
 void ParseMap(const std::string& game_state) {
@@ -215,10 +214,10 @@ int main(int argc, char *argv[]) {
 
                 // OMG how hacky... this is what passes for defence now
                 // TODO: Remove this when we have DESTINATION BASED processing
-                DoTurn(pw);
+                DoTurn(pw, turn_number);
                 if ( turn_number > 1 ) {
-                    DoTurn(pw);
-                    DoTurn(pw);
+                    DoTurn(pw, turn_number);
+                    DoTurn(pw, turn_number);
                 }
                 FinishTurn(pw);
                 map_data = "";
