@@ -1,13 +1,18 @@
 #ifndef PLANET_H_
 #define PLANET_H_
 
-#include "PlanetWars.h"
-
-class PlanetWars;
-class Fleet;
+#include <boost/shared_ptr.hpp>
 
 // my ships, enemy ships
 typedef std::pair<int, int> FleetSummary;
+
+class Planet;
+typedef boost::shared_ptr<Planet> PlanetPtr;
+
+#include "PlanetWars.h"
+
+class Fleet;
+
 // owner, ships
 struct PlanetState {
     int owner;
