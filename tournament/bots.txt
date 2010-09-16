@@ -5,6 +5,7 @@ PSimple3 bot/PSimple3
 #PCost4 bot/PCost4
 PCost5 bot/PCost5
 PCost6Lock bot/PCost6Lock
+PCost7Lock bot/PCost7Lock
 # *Dual java -jar example_bots/DualBot.jar
 # *Rage java -jar example_bots/RageBot.jar
 
