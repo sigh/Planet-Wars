@@ -13,8 +13,19 @@
 #include "Planet.h"
 #include "Config.h"
 
+#ifdef DEBUG
+
 #include <fstream>
 extern std::ofstream LOG_FILE;
+#define LOG(x) LOG_FILE << x
+#define LOG_FLUSH() LOG_FILE.flush()
+
+#else
+
+#define LOG(x)
+#define LOG_FLUSH()
+
+#endif
 
 const int NEUTRAL = 0;
 const int ME = 1;
