@@ -1,8 +1,10 @@
-#include "PlanetWars.h"
 #include <cmath>
 #include <string>
 #include <vector>
 #include <sstream>
+
+#include "PlanetWars.h"
+#include "Log.h"
 
 PlanetWars::PlanetWars(std::vector<PlanetPtr> planets)
     : planets_(planets) { }
