@@ -222,7 +222,7 @@ void DoTurn(PlanetWars& pw, int turn) {
 
             if ( required_ships < 0 ) {
                 // Fix the WTF
-                LOG( "WTF: " << cost << " " << available_ships << " " << source_p->Ships() << std::endl );
+                LOG( "WTF: " << cost << " " << available_ships << " " << source_p->Ships() );
             }
 
             orders.push_back( Order(source, p_id, required_ships, delay) ); 
@@ -237,7 +237,7 @@ void DoTurn(PlanetWars& pw, int turn) {
         for ( int j=0; j<orders.size()-1; ++j ) { // update delays so all fleet arrive at once
             Order& order = orders[j];
             order.delay = last_arrival - Map::Distance( order.source, order.dest );
-            LOG( " ORDER DELAY: " << order.delay << std::endl );
+            LOG( " ORDER DELAY: " << order.delay );
         }
 
 
@@ -266,7 +266,7 @@ void Defence(PlanetWars& pw) {
             //       (Idea send a zero day fleet)
             p->RemoveShips(required_ships);
 
-            LOG( " " << "Locking " << required_ships << " ships on planet " << p->PlanetID() << std::endl );
+            LOG( " " << "Locking " << required_ships << " ships on planet " << p->PlanetID() );
         }
     }
 }

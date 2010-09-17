@@ -165,7 +165,7 @@ void FinishTurn(const PlanetWars& pw) {
     std::cout.flush();
 
     // Log AFTER we have sent the command (wastes less time)
-    LOG( orders.size() << " Orders (" << num_ships << " ships):" << std::endl );
+    LOG( orders.size() << " Orders (" << num_ships << " ships):" );
 
     for ( int i=0; i < orders.size(); ++i ) {
         const Order &o = orders[i];
@@ -174,7 +174,7 @@ void FinishTurn(const PlanetWars& pw) {
             LOG( "INVALID ORDER: " ); 
         }
 
-        LOG( o.source << "->" << o.dest << " (" << o.ships << " ships)" << std::endl );
+        LOG( o.source << "->" << o.dest << " (" << o.ships << " ships)" );
     }
 }
 
@@ -186,7 +186,7 @@ int main(int argc, char *argv[]) {
     int turn_number = 0;
 
     LOG_INIT("debug_4.log");
-    LOG( "Start logging" << std::endl );
+    LOG( "Start logging" );
 
     Config::Parse(argc, argv);
 
@@ -209,10 +209,10 @@ int main(int argc, char *argv[]) {
 
                 PlanetWars pw = ParseGameState(map_data);
 
-                LOG( "== Turn " << turn_number << " ==" << std::endl );
+                LOG( "== Turn " << turn_number << " ==" );
 
-                LOG( "ME:    " << pw.Ships(ME) << "/" << pw.Production(ME) << std::endl ); 
-                LOG( "ENEMY: " << pw.Ships(ENEMY) << "/" << pw.Production(ENEMY) << std::endl ); 
+                LOG( "ME:    " << pw.Ships(ME) << "/" << pw.Production(ME) ); 
+                LOG( "ENEMY: " << pw.Ships(ENEMY) << "/" << pw.Production(ENEMY) ); 
 
                 // OMG how hacky... this is what passes for defence now
                 // TODO: Remove this when we have DESTINATION BASED processing
@@ -221,7 +221,7 @@ int main(int argc, char *argv[]) {
                 map_data = "";
                 
                 gettimeofday(&finish,NULL);
-                LOG( "Time: " <<  ( finish.tv_usec - init.tv_usec ) << std::endl );
+                LOG( "Time: " <<  ( finish.tv_usec - init.tv_usec ) );
                 LOG_FLUSH();
             } else {
                 map_data += current_line;
