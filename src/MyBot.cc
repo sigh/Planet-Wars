@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
-#include <time.h>
+#include <sys/time.h>
 #include "PlanetWars.h"
 #include "DoTurn.h"
 
@@ -196,7 +196,10 @@ int main(int argc, char *argv[]) {
         current_line += (char)c;
         if (c == '\n') {
             if (current_line.length() >= 2 && current_line.substr(0, 2) == "go") {
-                clock_t init=clock();
+                timeval init;
+                timeval finish;
+
+                gettimeofday(&init,NULL);
 
                 ++turn_number;
 
@@ -222,7 +225,8 @@ int main(int argc, char *argv[]) {
                 FinishTurn(pw);
                 map_data = "";
                 
-                LOG( "Time: " << ( (double)(clock() - init) / (double)CLOCKS_PER_SEC ) << std::endl );
+                gettimeofday(&finish,NULL);
+                LOG( "Time: " <<  ( finish.tv_usec - init.tv_usec ) << std::endl );
                 LOG_FLUSH();
             } else {
                 map_data += current_line;
