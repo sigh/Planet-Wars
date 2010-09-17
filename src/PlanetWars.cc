@@ -73,7 +73,7 @@ void PlanetWars::IssueOrder(const Order& order) {
         orders_.push_back(order);
     }
     else {
-        LOG( "  DELAYED ORDER: " << order.source << " " << order.dest << " " << order.ships << " | " << order.delay << std::endl);
+        LOG( "  DELAYED ORDER: " << order.source << " " << order.dest << " " << order.ships << " | " << order.delay );
     }
 }
 
