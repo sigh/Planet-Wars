@@ -10,6 +10,9 @@ PlanetWars::PlanetWars(std::vector<PlanetPtr> planets)
 PlanetPtr PlanetWars::GetPlanet(int planet_id) {
     return planets_[planet_id];
 }
+const PlanetPtr PlanetWars::GetPlanet(int planet_id) const {
+    return planets_[planet_id];
+}
 
 std::vector<PlanetPtr> PlanetWars::Planets() const {
     return planets_;
@@ -59,12 +62,12 @@ std::vector<Order> PlanetWars::Orders() const {
     return orders_;
 }
 
-void PlanetWars::IssueOrder(const Order& order, int delay) {
+void PlanetWars::IssueOrder(const Order& order) {
     planets_[order.source]->RemoveShips( order.ships );
-    planets_[order.dest]->AddIncomingFleet( Fleet( ME, order ), delay );
+    planets_[order.dest]->AddIncomingFleet( Fleet( ME, order ), order.delay );
 
     // only execute order if it is for now
-    if ( delay == 0 ) {
+    if ( order.delay == 0 ) {
         orders_.push_back(order);
     }
 }
