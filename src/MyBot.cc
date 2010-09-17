@@ -13,6 +13,7 @@
 #ifdef DEBUG
 std::ofstream LOG_FILE;
 std::ofstream LOG_ERROR_FILE;
+const char* PROG_NAME;
 #endif
 
 // This is a utility class that parses strings.
@@ -189,7 +190,7 @@ int main(int argc, char *argv[]) {
     std::string map_data;
     int turn_number = 0;
 
-    LOG_INIT("debug_4.log", "error.log");
+    LOG_INIT("debug_4.log", "error.log", argv[0]);
     LOG( "Start logging" );
 
     Config::Parse(argc, argv);
