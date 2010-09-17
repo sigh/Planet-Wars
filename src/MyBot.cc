@@ -12,6 +12,7 @@
 
 #ifdef DEBUG
 std::ofstream LOG_FILE;
+std::ofstream LOG_ERROR_FILE;
 #endif
 
 // This is a utility class that parses strings.
@@ -147,6 +148,7 @@ void FinishTurn(const PlanetWars& pw) {
     for ( int i=0; i < orders.size(); ++i ) {
         const Order &o = orders[i];
 
+        // TODO: Check if ships the planet has enough ships
         if ( o.source == o.dest || o.ships <= 0 ) {
             // ensure that the number of ships is positive
             continue;
@@ -171,10 +173,12 @@ void FinishTurn(const PlanetWars& pw) {
         const Order &o = orders[i];
 
         if ( o.source == o.dest || o.ships <= 0 ) {
-            LOG( "INVALID ORDER: " ); 
+            LOG_ERROR( "Invalid order: " << o.source << "->" << o.dest << " (" << o.ships << " ships)" );
+        }
+        else {
+            LOG( o.source << "->" << o.dest << " (" << o.ships << " ships)" );
         }
 
-        LOG( o.source << "->" << o.dest << " (" << o.ships << " ships)" );
     }
 }
 
@@ -185,7 +189,7 @@ int main(int argc, char *argv[]) {
     std::string map_data;
     int turn_number = 0;
 
-    LOG_INIT("debug_4.log");
+    LOG_INIT("debug_4.log", "error.log");
     LOG( "Start logging" );
 
     Config::Parse(argc, argv);

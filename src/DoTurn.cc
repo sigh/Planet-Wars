@@ -222,7 +222,7 @@ void DoTurn(PlanetWars& pw, int turn) {
 
             if ( required_ships < 0 ) {
                 // Fix the WTF
-                LOG( "WTF: " << cost << " " << available_ships << " " << source_p->Ships() );
+                LOG_ERROR( "WTF: " << cost << " " << available_ships << " " << source_p->Ships() );
             }
 
             orders.push_back( Order(source, p_id, required_ships, delay) ); 

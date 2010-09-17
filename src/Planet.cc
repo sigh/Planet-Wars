@@ -1,5 +1,6 @@
 #include "Planet.h"
 #include "Map.h"
+#include "Log.h"
 
 #include <algorithm>
 
@@ -65,8 +66,7 @@ void Planet::AddShips(int amount) {
 
 void Planet::RemoveShips(int amount) {
     if ( amount < 0 ) {
-        // TODO: Make log work here
-        // LOG( " ERROR: Trying to remove a negative number of ships" );
+        LOG_ERROR("Trying to remove " << amount << " ships from " << planet_id_ );
         return;
     }
     num_ships_ -= amount;
