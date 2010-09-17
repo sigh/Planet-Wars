@@ -8,6 +8,7 @@
 #include <sys/time.h>
 #include "PlanetWars.h"
 #include "DoTurn.h"
+#include "Log.h"
 
 #ifdef DEBUG
 std::ofstream LOG_FILE;
@@ -184,9 +185,7 @@ int main(int argc, char *argv[]) {
     std::string map_data;
     int turn_number = 0;
 
-#ifdef DEBUG
-    LOG_FILE.open("debug_4.log");
-#endif
+    LOG_INIT("debug_4.log");
     LOG( "Start logging" << std::endl );
 
     Config::Parse(argc, argv);
@@ -231,9 +230,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-#ifdef DEBUG
-    LOG_FILE.close();
-#endif
+    LOG_CLOSE();
 
     return 0;
 }

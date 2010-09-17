@@ -14,20 +14,6 @@
 #include "Config.h"
 #include "Fleet.h"
 
-#ifdef DEBUG
-
-#include <fstream>
-extern std::ofstream LOG_FILE;
-#define LOG(x) LOG_FILE << x
-#define LOG_FLUSH() LOG_FILE.flush()
-
-#else
-
-#define LOG(x)
-#define LOG_FLUSH()
-
-#endif
-
 class PlanetWars {
     public:
         PlanetWars(std::vector<PlanetPtr> planets);

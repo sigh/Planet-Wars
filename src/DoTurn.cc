@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include "PlanetWars.h"
+#include "Log.h"
 #include "DoTurn.h"
 
 void Defence(PlanetWars& pw);
