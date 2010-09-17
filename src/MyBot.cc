@@ -218,10 +218,6 @@ int main(int argc, char *argv[]) {
                 // OMG how hacky... this is what passes for defence now
                 // TODO: Remove this when we have DESTINATION BASED processing
                 DoTurn(pw, turn_number);
-                if ( turn_number > 1 ) {
-                    DoTurn(pw, turn_number);
-                    DoTurn(pw, turn_number);
-                }
                 FinishTurn(pw);
                 map_data = "";
                 

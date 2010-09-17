@@ -6,11 +6,7 @@
 void Defence(PlanetWars& pw);
 
 void DoTurn(PlanetWars& pw, int turn) {
-    static int prev_turn = -1;
-if ( turn > prev_turn ) {
-  Defence(pw);
-  prev_turn = turn;
-}
+    Defence(pw);
 
   std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
 
