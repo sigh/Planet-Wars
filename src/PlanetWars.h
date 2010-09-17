@@ -12,6 +12,7 @@
 #include "Map.h"
 #include "Planet.h"
 #include "Config.h"
+#include "Fleet.h"
 
 #ifdef DEBUG
 
@@ -26,40 +27,6 @@ extern std::ofstream LOG_FILE;
 #define LOG_FLUSH()
 
 #endif
-
-const int NEUTRAL = 0;
-const int ME = 1;
-const int ENEMY = 2;
-
-class Planet;
-
-struct Order {
-    public:
-        int source;
-        int dest;
-        int ships;
-        Order(int source, int dest, int ships)
-            : source(source), dest(dest), ships(ships) {
-                // TODO: Warn and log error about empty order
-            if  (ships < 0) {
-                ships = 0;
-            }
-       }
-};
-
-struct Fleet {
-    public:
-        int owner;
-        int dest;
-        int ships;
-        int remaining;
-        Fleet() {};
-        Fleet(int owner, const Order &o) : owner(owner) {
-            dest = o.dest;
-            ships = o.ships;
-            remaining = Map::Distance( o.source, o.dest );
-        }
-};
 
 class PlanetWars {
     public:

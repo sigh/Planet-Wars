@@ -3,6 +3,10 @@
 
 #include <vector>
 
+const int NEUTRAL = 0;
+const int ME = 1;
+const int ENEMY = 2;
+
 namespace Map {
     // Returns the growth rate of the planet. Unless the planet is neutral, the
     // population of the planet grows by this amount each turn. The higher this
