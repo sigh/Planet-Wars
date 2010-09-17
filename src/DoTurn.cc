@@ -40,7 +40,7 @@ void DoTurn(PlanetWars& pw, int turn) {
             int closest_enemy = ClosestPlanetByOwner( pw, p_id, ENEMY );
             int closest_me = ClosestPlanetByOwner( pw, p_id, ME );
 
-            if ( closest_enemy >= 0 && Map::Distance( closest_enemy, p_id ) <= Map::Distance( closest_me, p_id) ) {
+            if ( closest_enemy >= 0 && closest_me >= 0  && Map::Distance( closest_enemy, p_id ) <= Map::Distance( closest_me, p_id) ) {
                 continue;
             }
         }
@@ -119,7 +119,6 @@ void DoTurn(PlanetWars& pw, int turn) {
             scores.push_back( std::pair<int,int>(score, p_id) );
         // }
     }
-
 
     // sort scores
     std::sort(scores.begin(), scores.end());
