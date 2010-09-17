@@ -29,7 +29,7 @@ void DoTurn(PlanetWars& pw, int turn) {
         // Don't need to do anything if we will own the planet
         // TODO: Handle in the Distribution phase
         int future_owner = p->FutureOwner();
-        if ( future_owner == 1) {
+        if ( future_owner == ME) {
             continue;
         }
 
@@ -139,9 +139,9 @@ void DoTurn(PlanetWars& pw, int turn) {
         // sort MY planets in order of distance the target planet
         const std::vector<int>& all_sorted = Map::PlanetsByDistance( p_id );
         std::vector<int> my_sorted;
-        for ( int i=1; i<all_sorted.size(); ++i) {
-            if ( all_sorted[i] != p_id && pw.GetPlanet(all_sorted[i])->Owner() == ME ) {
-                my_sorted.push_back( all_sorted[i] );
+        for ( int j=1; j<all_sorted.size(); ++j) {
+            if ( all_sorted[j] != p_id && pw.GetPlanet(all_sorted[j])->Owner() == ME ) {
+                my_sorted.push_back( all_sorted[j] );
             }
         }
 
@@ -155,8 +155,8 @@ void DoTurn(PlanetWars& pw, int turn) {
         int score = INF;
         int delay = 0;
 
-        for ( int i=0; i<my_sorted.size() && cost > available_ships; ++i) {
-            int source = my_sorted[i];
+        for ( int j=0; j < my_sorted.size() && cost > available_ships; ++j) {
+            int source = my_sorted[j];
             const PlanetPtr source_p = pw.GetPlanet(source);
             
             available_ships += source_p->Ships();
@@ -206,29 +206,46 @@ void DoTurn(PlanetWars& pw, int turn) {
                 cost = best_cost;
             }
             cost += 3;
+            // cost -= delay * Map::GrowthRate(source);
+            if ( cost < 0 ) {
+                cost = 0;
+            }
 
+            int required_ships = 0;
             if ( cost > available_ships ) {
-                orders.push_back( Order(source, p_id, source_p->Ships(), delay) ); 
+                required_ships = source_p->Ships();
             }
             else {
-                orders.push_back( Order(source, p_id, cost - ( available_ships - source_p->Ships() ), delay) ); 
+                required_ships = cost - ( available_ships - source_p->Ships() );
             }
+
+            if ( required_ships < 0 ) {
+                LOG( "WTF: " << cost << " " << available_ships << " " << source_p->Ships() << std::endl );
+            }
+
+            orders.push_back( Order(source, p_id, required_ships, delay) ); 
         }
 
-        if ( cost <= available_ships ) {  // Try putting this back in
-            scores.push_back( std::pair<int,int>(score, p_id) );
-        }
-        else {
+        if ( cost > available_ships ) {
             break;
         }
 
+        const Order& last_order = orders.back();
+        int last_arrival = last_order.delay + Map::Distance( last_order.source, last_order.dest );
+        for ( int j=0; j<orders.size()-1; ++j ) { // update delays so all fleet arrive at once
+            Order& order = orders[j];
+            order.delay = last_arrival - Map::Distance( order.source, order.dest );
+            LOG( " ORDER DELAY: " << order.delay << std::endl );
+        }
+
+
         // If we reached here we want to actually execute the orders
-        for ( int j=0; j<orders.size(); j++ ) {
+        for ( int j=0; j<orders.size(); ++j ) {
             pw.IssueOrder(orders[j]);
         }
 
         // TODO: remove this
-        break;
+        // break;
     }
 
 
@@ -270,12 +287,12 @@ void Defence(PlanetWars& pw) {
 
         int required_ships = p->RequiredShips();
 
-        if ( required_ships > 3 ) { 
+        if ( required_ships > 0 ) { 
             // -3 works slightly better than just 0
             // TODO: Find the best number
-            p->RemoveShips(required_ships-3);
+            p->RemoveShips(required_ships);
 
-            LOG( " " << "Locking " << (required_ships - 3) << " ships on planet " << p->PlanetID() << std::endl );
+            LOG( " " << "Locking " << (required_ships) << " ships on planet " << p->PlanetID() << std::endl );
         }
     }
 }
