@@ -220,6 +220,7 @@ void DoTurn(PlanetWars& pw, int turn) {
             }
 
             if ( required_ships < 0 ) {
+                // Fix the WTF
                 LOG( "WTF: " << cost << " " << available_ships << " " << source_p->Ships() << std::endl );
             }
 
@@ -243,56 +244,28 @@ void DoTurn(PlanetWars& pw, int turn) {
         for ( int j=0; j<orders.size(); ++j ) {
             pw.IssueOrder(orders[j]);
         }
-
-        // TODO: remove this
-        // break;
     }
-
-
-   //   if (source >= 0 && dest >= 0 ) {
-   //     // TODO: we should only send units when required_ships > 0 BUT
-   //     //       it does help redirstribute ships.
-   //     // Keep until we have proper redistribution
-   //       // determine the number of ships required to take over the planet
-   //       required_ships += 3;
-
-   //       required_ships -= dest_delay * Map::GrowthRate(source);
-
-   //       // ensure that we have enough ships to take over the planet.
-   //       // TODO: Determine best parameter
-   //       if ( required_ships <= 0 || required_ships > (int)(source_num_ships) ) {
-   //         continue;
-   //       }
-
-   //       if ( dest_delay > 0 ) {
-   //         LOG( "  DELAYED ORDER: " << source << " " << dest << " " << required_ships << " | " << dest_delay << std::endl);
-   //       }
-   //       pw.IssueOrder(Order( source, dest, required_ships ), dest_delay);
-   //     }
-   // }
 }
 
+// Lock the required number of ships onto planets that are under attack
 void Defence(PlanetWars& pw) {
     std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
 
     for (int i = 0; i < my_planets.size(); ++i) {
         PlanetPtr p = my_planets[i];
-        // if ( p.FutureOwner() != ME ) {
-        //     continue;
-        // }
 
         // TODO: IF this is an important planet then we must protect
         // Else we can run away if AFTER all order have been issued we are still 
         // under attack
-
+        
         int required_ships = p->RequiredShips();
 
         if ( required_ships > 0 ) { 
-            // -3 works slightly better than just 0
-            // TODO: Find the best number
+            // TODO: This might be impacting the prediction so see if we can fix it
+            //       (Idea send a zero day fleet)
             p->RemoveShips(required_ships);
 
-            LOG( " " << "Locking " << (required_ships) << " ships on planet " << p->PlanetID() << std::endl );
+            LOG( " " << "Locking " << required_ships << " ships on planet " << p->PlanetID() << std::endl );
         }
     }
 }

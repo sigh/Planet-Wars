@@ -64,8 +64,9 @@ void Planet::AddShips(int amount) {
 }
 
 void Planet::RemoveShips(int amount) {
-    // TODO: WTF
     if ( amount < 0 ) {
+        // TODO: Make log work here
+        // LOG( " ERROR: Trying to remove a negative number of ships" << std::endl );
         return;
     }
     num_ships_ -= amount;
