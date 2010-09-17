@@ -35,6 +35,7 @@ class PlanetWars {
         // Returns the planet with the given planet_id. There are NumPlanets()
         // planets. They are numbered starting at 0.
         PlanetPtr GetPlanet(int planet_id);
+        const PlanetPtr GetPlanet(int planet_id) const;
 
         // Returns a list of all the planets.
         std::vector<PlanetPtr> Planets() const;
@@ -50,7 +51,7 @@ class PlanetWars {
         // else your bot will get kicked and lose the game. For example, you must own
         // source_planet, and you can't send more ships than you actually have on
         // that planet.
-        void IssueOrder(const Order& order, int delay=0);
+        void IssueOrder(const Order& order);
 
         // Returns the number of ships that the given player has, either located
         // on planets or in flight.

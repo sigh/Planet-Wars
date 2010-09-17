@@ -8,8 +8,9 @@ struct Order {
         int source;
         int dest;
         int ships;
-        Order(int source, int dest, int ships)
-            : source(source), dest(dest), ships(ships) {
+        int delay;
+        Order(int source, int dest, int ships, int delay=0)
+            : source(source), dest(dest), ships(ships), delay(delay) {
                 // TODO: Warn and log error about empty order
             if  (ships < 0) {
                 ships = 0;
