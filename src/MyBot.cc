@@ -185,7 +185,7 @@ int main(int argc, char *argv[]) {
     int turn_number = 0;
 
 #ifdef DEBUG
-    LOG_FILE.open("debug_3.log");
+    LOG_FILE.open("debug_4.log");
 #endif
     LOG( "Start logging" << std::endl );
 

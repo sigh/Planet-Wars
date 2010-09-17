@@ -64,6 +64,10 @@ void Planet::AddShips(int amount) {
 }
 
 void Planet::RemoveShips(int amount) {
+    // TODO: WTF
+    if ( amount < 0 ) {
+        return;
+    }
     num_ships_ -= amount;
     if ( num_ships_ < 0 ) {
         num_ships_ = 0;

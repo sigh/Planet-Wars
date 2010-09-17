@@ -12,9 +12,6 @@ struct Order {
         Order(int source, int dest, int ships, int delay=0)
             : source(source), dest(dest), ships(ships), delay(delay) {
                 // TODO: Warn and log error about empty order
-            if  (ships < 0) {
-                ships = 0;
-            }
        }
 };
 
