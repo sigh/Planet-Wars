@@ -13,7 +13,7 @@
 #ifdef DEBUG
 std::ofstream LOG_FILE;
 std::ofstream LOG_ERROR_FILE;
-const char* PROG_NAME;
+std::string PROG_NAME;
 #endif
 
 // This is a utility class that parses strings.
@@ -190,7 +190,7 @@ int main(int argc, char *argv[]) {
     std::string map_data;
     int turn_number = 0;
 
-    LOG_INIT("debug_4.log", "error.log", argv[0]);
+    LOG_INIT(argv[0]);
     LOG( "Start logging" );
 
     Config::Parse(argc, argv);
@@ -219,8 +219,6 @@ int main(int argc, char *argv[]) {
                 LOG( "ME:    " << pw.Ships(ME) << "/" << pw.Production(ME) ); 
                 LOG( "ENEMY: " << pw.Ships(ENEMY) << "/" << pw.Production(ENEMY) ); 
 
-                // OMG how hacky... this is what passes for defence now
-                // TODO: Remove this when we have DESTINATION BASED processing
                 DoTurn(pw, turn_number);
                 FinishTurn(pw);
                 map_data = "";
