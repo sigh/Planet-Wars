@@ -37,5 +37,5 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, stop_handler)
 
     run_game()
-    # while not stop:
-    #     run_game()
+    while not stop:
+        run_game()
