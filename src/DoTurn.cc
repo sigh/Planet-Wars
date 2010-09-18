@@ -15,7 +15,11 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
 const int INF = 999999;
 
 void DoTurn(PlanetWars& pw, int turn) {
+    LOG(" Defence phase");
+
     Defence(pw);
+
+    LOG(" Expansion phase");
 
     std::vector<PlanetPtr> planets = pw.Planets();
     std::vector< std::pair<int,int> > scores;
@@ -59,6 +63,8 @@ void DoTurn(PlanetWars& pw, int turn) {
     // sort scores
     std::sort(scores.begin(), scores.end());
 
+    LOG(" Starting attacks");
+
     // start attacking planets based on score
     for ( int i=0; i < scores.size(); ++i) {
         std::pair<int,int> s = scores[i];
@@ -97,7 +103,11 @@ void DoTurn(PlanetWars& pw, int turn) {
         }
     }
 
+    LOG(" Redistribution phase");
+
     Redistribution(pw);
+
+    LOG(" Finishing up");
 }
 
 // Lock the required number of ships onto planets that are under attack
