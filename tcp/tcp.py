@@ -16,14 +16,14 @@ OPTIONS = {
 def run_game():
     p = subprocess.Popen( 
         ['tcp/tcp', OPTIONS['ip'], OPTIONS['port'], OPTIONS['name']+'-'+OPTIONS['version'], OPTIONS['bot_file']],
-        stdout=sys.stderr,
-        stderr=sys.stdout
-        # stdout=subprocess.PIPE, 
-        # stderr=subprocess.PIPE
+        # stdout=sys.stderr,
+        # stderr=sys.stdout
+        stdout=subprocess.PIPE, 
+        stderr=subprocess.PIPE
     )
-    # (stdout, stderr) = p.communicate()
-    p.wait()
-    # print stdout
+    (stdout, stderr) = p.communicate()
+    # p.wait()
+    print stdout
 
 def parse_args():
     opts, args = getopt.getopt(sys.argv[1:], "", [o+"=" for o in OPTIONS] + ['once'])
@@ -35,13 +35,14 @@ stop = False
 def stop_handler(*args):
     global stop
     stop = True
+    print "Stopping after the current game ends"
 
 if __name__ == "__main__":
     parse_args()
 
-    signal.signal(signal.SIGINT, stop_handler)
-
-    while not stop:
+    if OPTIONS['once']:
         run_game()
-        if OPTIONS['once']:
-            stop_handler()
+    else:
+        signal.signal(signal.SIGINT, stop_handler)
+        while not stop:
+            run_game()
