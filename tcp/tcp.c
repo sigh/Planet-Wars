@@ -137,6 +137,9 @@ int main(int argc, char *argv[])
 	char buf[1024], line[2][1024];
 	const char *password = "";
 
+    // ignore SIGINT
+    signal(SIGINT, SIG_IGN); 
+
 	if (argc < 5 || (!strcmp(argv[4], "-p") && argc < 7)) {
 		printf("usage: %s ip port username [-p password] "
 		    "command [args]\n", argv[0]);
