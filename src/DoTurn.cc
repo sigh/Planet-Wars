@@ -1,11 +1,13 @@
 #include <cmath>
 #include <cstdlib>
 #include <algorithm>
+#include <map>
 #include "PlanetWars.h"
 #include "Log.h"
 #include "DoTurn.h"
 
 void Defence(PlanetWars& pw);
+void Redistribution(PlanetWars& pw);
 int ClosestPlanetByOwner(const PlanetWars& pw, int planet, int player);
 std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p);
 std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<Order>& orders);
@@ -94,6 +96,8 @@ void DoTurn(PlanetWars& pw, int turn) {
             pw.IssueOrder(orders[j]);
         }
     }
+
+    Redistribution(pw);
 }
 
 // Lock the required number of ships onto planets that are under attack
@@ -115,6 +119,54 @@ void Defence(PlanetWars& pw) {
             p->RemoveShips(required_ships);
 
             LOG( " " << "Locking " << required_ships << " ships on planet " << p->PlanetID() );
+        }
+    }
+}
+
+void Redistribution(PlanetWars& pw) {
+    const std::vector<PlanetPtr> enemy_planets = pw.PlanetsOwnedBy(ENEMY);
+
+    // Lock planets which are closest to an enemy
+    std::map<int,bool> locked_planets;
+    for (int i = 0; i < enemy_planets.size(); ++i) {
+        int p = enemy_planets[i]->PlanetID();
+        locked_planets[ClosestPlanetByOwner(pw,p,ME)] = true;
+    }
+
+    // determine distances of own planets
+    const std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
+    std::map<int,int> distances;
+    for (int i = 0; i < my_planets.size(); ++i) {
+        int me = my_planets[i]->PlanetID();
+        int enemy = ClosestPlanetByOwner(pw, me, ENEMY);
+        distances[me] = enemy >= 0 ? Map::Distance(me, enemy) : 0;
+    }
+
+    for (int i = 0; i < my_planets.size(); ++i) {
+        PlanetPtr p = my_planets[i];
+        int p_id = p->PlanetID();
+
+        // Filter out planets we don't want to redistribute from
+        if ( locked_planets[p_id] || p->Ships() <= 0 ) {
+            continue;
+        }
+
+        // Find the closest planet with a lower distance to the enemy
+        int distance = distances[p_id];
+        const std::vector<int>& sorted = Map::PlanetsByDistance( p_id );
+        int closest = -1;
+        for ( int j=0; j<sorted.size(); ++j ) {
+            int s_id = sorted[j];
+            if ( pw.GetPlanet(s_id)->Owner() == ME && distances[s_id] < distance ) {
+                closest = s_id;
+                distance = distances[s_id];
+            }
+        }
+
+        // If we found a planet, then send half available ships there
+        if (closest >= 0) {
+            LOG( " Redistributing from " << p_id << " to " << closest );
+            pw.IssueOrder(Order(p_id, closest, p->Ships()));
         }
     }
 }
