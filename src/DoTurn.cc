@@ -136,12 +136,6 @@ int ClosestPlanetByOwner(const PlanetWars& pw, int planet, int player) {
     return closest;
 }
 
-struct CostData {
-    int score;
-    int cost;
-    int delay;
-};
-
 std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p) {
     std::vector<Order> orders;
     return CostAnalysis(pw, p, orders);
