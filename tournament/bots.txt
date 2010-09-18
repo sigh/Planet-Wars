@@ -7,6 +7,7 @@ PCost5 bot/PCost5
 PCost6Lock bot/PCost6Lock
 PCost7Lock bot/PCost7Lock
 Dest bot/Dest
+Redist bot/Redist
 # *Dual java -jar example_bots/DualBot.jar
 # *Rage java -jar example_bots/RageBot.jar
 
