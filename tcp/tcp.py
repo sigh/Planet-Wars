@@ -8,7 +8,7 @@ import getopt
 OPTIONS = {
     'ip': '213.3.30.106',
     'port': '9999',
-    'base_name': 'test',
+    'base_name': 'sigh',
     'name': '',
     'bot_file': './src/MyBot'
 }
@@ -36,6 +36,6 @@ if __name__ == "__main__":
 
     signal.signal(signal.SIGINT, stop_handler)
 
-    run_game()
+    #run_game()
     while not stop:
         run_game()
