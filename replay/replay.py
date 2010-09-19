@@ -12,22 +12,18 @@ OPTIONS = {
     'player': 1
 }
 
-def map_data(playback_string):
-    return '\n'.join( 
-        'P ' + ' '.join(p.split(','))
-        for p in playback_string.split('|')[0].split(':')
-    )
-
 def game_data(playback_string):
-    result = [map_data(playback_string), 'go']
+    planets, playback = playback_string.split('|')
+    planet_data = [ p.split(',') for p in planets.split(':') ]
+    map_data = '\n'.join('P '+' '.join(p) for p in planet_data)
 
-    playback = playback_string.split('|')
-    if len(playback) < 2: return '\n'.join(result)
+    if 'map_only' in OPTIONS:
+        return map_data
 
-    planet_data = [ p.split(',') for  p in playback_string.split('|')[0].split(':') ]
+    result = [map_data, 'go']
     num_planets = len(planet_data)
     
-    for turn in playback[1].split(':'):
+    for turn in playback.split(':'):
         parts = turn.split(',')
 
         # planets
@@ -52,7 +48,7 @@ def get_data(game_id):
         return dict(item.split('=',2) for item in match.group(1).split('\\n') if item)
 
 def parse_args():
-    opts, args = getopt.getopt(sys.argv[1:], "", [o+"=" for o in OPTIONS] + ['map_only'])
+    opts, args = getopt.getopt(sys.argv[1:], "", [o+"=" for o in OPTIONS] + ['map_only', 'swap_players'])
     for o, a in opts:
         OPTIONS[o[2:]] = a
     return args
@@ -61,7 +57,4 @@ if __name__ == "__main__":
     args = parse_args()
     data = get_data(args[0])
 
-    if 'map_only' in OPTIONS:
-        print map_data(data['playback_string'])
-    else:
-        print game_data(data['playback_string'])
+    print game_data(data['playback_string'])
