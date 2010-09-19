@@ -12,49 +12,38 @@ OPTIONS = {
     'player': 1
 }
 
-def parse_planet(input):
-    input = input.split(',')
-    # (x,y,owner,numShips,growthRate)
-    return {
-        'x': input[0],
-        'y': input[1],
-        'owner': input[2],
-        'ships': input[3],
-        'growth': input[4]
-    }
-
-def parse_fleet(input):
-    input = input.split('.')
-    # (x,y,owner,numShips,growthRate)
-    return {
-        'owner': input[0],
-        'ships': input[1],
-        'source': input[2],
-        'destination': input[3],
-        'trip_length': input[4],
-        'progress': int(input[4]) - int(input[5])
-    }
-
 def map_data(playback_string):
-    return '\n'.join(
-        "P %s %s %s %s %s" %(p['x'], p['y'], p['owner'], p['ships'], p['growth'])
-        for p in get_planets(playback_string)
+    return '\n'.join( 
+        'P ' + ' '.join(p.split(','))
+        for p in playback_string.split('|')[0].split(':')
     )
 
-def get_planets(playback_string):
-    return map(parse_planet, playback_string.split('|')[0].split(':'))
+def game_data(playback_string):
+    result = [map_data(playback_string), 'go']
 
-def fleet_data(playback_string):
     playback = playback_string.split('|')
-    if len(playback) < 2:
-        return []
-    num_planets = len(get_planets(playback_string))
+    if len(playback) < 2: return '\n'.join(result)
 
-    all_fleets = []
+    planet_data = [ p.split(',') for  p in playback_string.split('|')[0].split(':') ]
+    num_planets = len(planet_data)
+    
     for turn in playback[1].split(':'):
-        all_fleets.append( map(parse_fleet, turn.split(',')[num_planets:]) )
+        parts = turn.split(',')
 
-    return all_fleets
+        # planets
+        for i, p in enumerate(parts[:num_planets]):
+            planet = list(planet_data[i])
+            planet[2], planet[3] = p.split('.')
+            result.append( 'P ' + ' '.join(planet) )
+
+        # fleets
+        for f in parts[num_planets:]:
+            result.append('F '+' '.join(f.split('.')))
+
+        # go
+        result.append('go')
+
+    return '\n'.join(result)
 
 def get_data(game_id):
     page = urlopen(OPTIONS['url'] + '?' + OPTIONS['param'] + '=' + str(game_id)).read()
@@ -63,7 +52,7 @@ def get_data(game_id):
         return dict(item.split('=',2) for item in match.group(1).split('\\n') if item)
 
 def parse_args():
-    opts, args = getopt.getopt(sys.argv[1:], "", [o+"=" for o in OPTIONS])
+    opts, args = getopt.getopt(sys.argv[1:], "", [o+"=" for o in OPTIONS] + ['map_only'])
     for o, a in opts:
         OPTIONS[o[2:]] = a
     return args
@@ -72,7 +61,7 @@ if __name__ == "__main__":
     args = parse_args()
     data = get_data(args[0])
 
-    map_string = map_data(data['playback_string'])
-    fleets = fleet_data(data['playback_string'])
-
-    # print map_string
+    if 'map_only' in OPTIONS:
+        print map_data(data['playback_string'])
+    else:
+        print game_data(data['playback_string'])
