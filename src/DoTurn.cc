@@ -169,7 +169,10 @@ void Redistribution(PlanetWars& pw) {
             int s_id = sorted[j];
             if ( pw.GetPlanet(s_id)->Owner() == ME && distances[s_id] < distance ) {
                 closest = s_id;
-                distance = distances[s_id];
+                // If we comment this out then we just throw all units at the planet
+                // closest to the enemy. This leaves our units quite vunerable
+                // But for some reason it is sometimes effective. Find out when and WHY!
+                break; // Redist has this commented out
             }
         }
 
