@@ -8,19 +8,20 @@ import getopt
 OPTIONS = {
     'url': "http://www.ai-contest.com/visualizer.php",
     'param': 'game_id',
-    'fleet_file': 'fleet_commands.txt',
-    'player': 1
 }
 
 def game_data(playback_string):
+    result = []
     planets, playback = playback_string.split('|')
     planet_data = [ p.split(',') for p in planets.split(':') ]
-    map_data = '\n'.join('P '+' '.join(p) for p in planet_data)
+    for p in planet_data:
+        p[2] = map_player(p[2])
+        result.append('P '+' '.join(p))
 
     if 'map_only' in OPTIONS:
-        return map_data
+        return '\n'.join(result)
 
-    result = [map_data, 'go']
+    result.append('go')
     num_planets = len(planet_data)
     
     for turn in playback.split(':'):
@@ -30,16 +31,25 @@ def game_data(playback_string):
         for i, p in enumerate(parts[:num_planets]):
             planet = list(planet_data[i])
             planet[2], planet[3] = p.split('.')
+            planet[2] = map_player(planet[2])
             result.append( 'P ' + ' '.join(planet) )
 
         # fleets
         for f in parts[num_planets:]:
-            result.append('F '+' '.join(f.split('.')))
+            fleet = f.split('.')
+            fleet[0] = map_player(fleet[0])
+            result.append('F '+' '.join(fleet))
 
         # go
         result.append('go')
 
     return '\n'.join(result)
+
+def map_player(player):
+    if player == '0' or 'swap_players' not in OPTIONS:
+        return player
+    else:
+        return str(3-int(player))
 
 def get_data(game_id):
     page = urlopen(OPTIONS['url'] + '?' + OPTIONS['param'] + '=' + str(game_id)).read()
