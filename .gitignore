@@ -11,3 +11,6 @@ tcp/tcp
 *.log
 log.txt
 
+# files that the visualiser generates
+visualizer/generated.htm
+
