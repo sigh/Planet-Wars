@@ -35,4 +35,4 @@ if __name__ == "__main__":
     generated_path = os.path.realpath(os.path.join(path, 'generated.htm'))
 
     generate(data, generated_path)
-    webbrowser.open('file://'+generated_path)
+    # webbrowser.open('file://'+generated_path)
