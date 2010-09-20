@@ -8,8 +8,8 @@ import shutil
 import re
 
 OPTIONS = {
-    'ip': '213.3.30.106',
-    'port': '9999',
+    'ip': '72.44.46.68',
+    'port': '995',
     'name': 'sigh',
     'version': '',
     'bot_file': './src/MyBot'
