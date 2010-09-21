@@ -284,7 +284,7 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
             // determine the best day to arrive on
             for ( int arrive = future_days; arrive >= distance; --arrive ) {
                 // TODO: Another magic param 
-                int cost = p->Cost( arrive ) + 5; 
+                int cost = p->Cost( arrive ); 
 
                 // int score = arrive + arrive/2;
                 int score = (int)ceil((double)cost/growth_rate/2.0) + arrive; 
