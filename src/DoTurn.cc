@@ -57,6 +57,7 @@ void DoTurn(PlanetWars& pw, int turn) {
 
         // if ( cost <= available_ships ) {  // Try putting this back in
             scores.push_back( std::pair<int,int>(score, p_id) );
+            LOG( "  score of planet " << p_id << " = " << score );
         // }
     }
 
@@ -221,6 +222,13 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
         }
     }
 
+    // determine distance to closest enemy
+    int closest_enemy_distance = INF;
+    int closest_enemy = ClosestPlanetByOwner( pw, p_id, ENEMY );
+    if ( closest_enemy >= 0 ) {
+        closest_enemy_distance = Map::Distance(closest_enemy, p_id);
+    }
+
     // Determine best case 
     int future_days = p->FutureDays();
     int future_owner = p->FutureOwner();
@@ -228,6 +236,7 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
     int available_ships = 0;
     int cost = INF;
     int score = INF;
+    int final_score = INF;
     int delay = 0;
 
     for ( int i=0; i<my_sorted.size() && cost > available_ships; ++i) {
@@ -251,8 +260,14 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
                 //   + time to regain units due to growth rate of enemy
                 //   - time to offset enemy units that will no longer be produced
                 score = ceil((double)cost/growth_rate/2.0) + distance;
+                // score = distance + distance/2;
             }
             else {
+                // Don't attack neutral planets closer to the enemy
+                if (distance >= closest_enemy_distance ) {
+                    return std::pair<int,int>(INF,INF);
+                }
+
                 // For a neutral planet:
                 //   the number of days to travel to the planet
                 //   + time to regain units spent
@@ -263,7 +278,7 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
             // hard case: we can arrive before some other ships
             // we know that this planet is (or will be) eventually be owned 
             // by an enemy
-            int best_score = 99999;
+            int best_score = INF;
             int best_cost = 0;
 
             // determine the best day to arrive on
@@ -271,6 +286,7 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
                 // TODO: Another magic param 
                 int cost = p->Cost( arrive ) + 5; 
 
+                // int score = arrive + arrive/2;
                 int score = (int)ceil((double)cost/growth_rate/2.0) + arrive; 
                 if ( score < best_score ) {
                     best_score = score;
@@ -301,6 +317,11 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
         }
 
         orders.push_back( Order(source, p_id, required_ships, delay) ); 
+
+        // take the score from the *closest* planet
+        if ( final_score == INF ) {
+            final_score = score;
+        }
     }
 
     if ( cost > available_ships ) {
