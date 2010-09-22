@@ -8,8 +8,8 @@ import getopt
 import sys
 
 OPTIONS = {
-    'max_turns': 1000,
-    'timeout'  : 1000,
+    'max_turns': 200,
+    'timeout'  : 500,
     'engine'   : "tools/PlayGame.jar",
     'log_file' : "log.txt",
     'bot_file' : "tournament/bots.txt",
