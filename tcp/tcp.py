@@ -10,14 +10,17 @@ import re
 OPTIONS = {
     'ip': '72.44.46.68',
     'port': '995',
-    'name': 'sigh',
+    'name': 'sigh', 
+    # This is not an important password
+    'password': '1q2w3e4r5t6y7u8i9o0p',
     'version': '',
     'bot_file': './src/MyBot'
 }
 
 def run_game():
+    username = OPTIONS['name']+'-'+OPTIONS['version'];
     p = subprocess.Popen( 
-        ['tcp/tcp', OPTIONS['ip'], OPTIONS['port'], OPTIONS['name']+'-'+OPTIONS['version'], OPTIONS['bot_file']],
+        ['tcp/tcp', OPTIONS['ip'], OPTIONS['port'], username, '-p', OPTIONS['password'], OPTIONS['bot_file']], 
         stdout=subprocess.PIPE, 
         stderr=subprocess.PIPE
     )
