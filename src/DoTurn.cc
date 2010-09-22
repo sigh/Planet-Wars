@@ -252,12 +252,8 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
             cost = prediction.ships;
 
             if ( future_owner ) {
-                // For an enemy planet:
-                //   the number of days to travel to the planet 
-                //   + time to regain units on planet at start of flight
-                //   + time to regain units due to growth rate of enemy
-                //   - time to offset enemy units that will no longer be produced
-                score = ceil((double)cost/growth_rate/2.0) + distance;
+                // TODO: determine the best factor for distance
+                score = ceil((double)cost/growth_rate/2.0) + distance*2;
                 // score = distance + distance/2;
             }
             else {
@@ -285,7 +281,7 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
                 int cost = p->Cost( arrive ); 
 
                 // int score = arrive + arrive/2;
-                int score = (int)ceil((double)cost/growth_rate/2.0) + arrive; 
+                int score = (int)ceil((double)cost/growth_rate/2.0) + arrive*2; 
                 if ( score < best_score ) {
                     best_score = score;
                     delay = arrive - distance;
