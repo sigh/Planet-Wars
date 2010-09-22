@@ -4,19 +4,11 @@
 
 #include <algorithm>
 
-Planet::Planet(
-    int planet_id,
-    int owner,
-    int num_ships
-) {
-    planet_id_ = planet_id;
-    owner_ = owner;
-    num_ships_ = num_ships;
-    update_prediction_ = true;
-    incoming_fleets_.clear();
-    prediction_.clear();
-}
-
+Planet::Planet( int planet_id, int owner, int num_ships):
+    planet_id_(planet_id), owner_(owner), num_ships_(num_ships),
+    update_prediction_(true),
+    incoming_fleets_(1,FleetSummary(0,0)) { } 
+    
 int Planet::PlanetID() const {
     return planet_id_;
 }
@@ -59,21 +51,19 @@ int Planet::WeightedIncoming() const {
     return ships;
 }
 
-void Planet::AddShips(int amount) {
-    num_ships_ += amount;
-    update_prediction_ = true;
-}
-
-void Planet::RemoveShips(int amount) {
+int Planet::RemoveShips(int amount) {
     if ( amount < 0 ) {
         LOG_ERROR("Trying to remove " << amount << " ships from " << planet_id_ );
-        return;
+        return 0;
     }
     num_ships_ -= amount;
     if ( num_ships_ < 0 ) {
+        amount += num_ships_;
         num_ships_ = 0;
     }
     update_prediction_ = true;
+
+    return amount;
 }
 
 void Planet::AddIncomingFleet(const Fleet &f, int delay) {
@@ -93,6 +83,11 @@ void Planet::AddIncomingFleet(const Fleet &f, int delay) {
     }
 
     update_prediction_ = true;
+}
+
+void Planet::LockShips(int ships) {
+    ships = RemoveShips(ships);
+    incoming_fleets_[0].first += ships;
 }
 
 // predicted owner after all fleets have arrived
@@ -183,7 +178,7 @@ void Planet::UpdatePrediction() const {
     // initialise current day
     PlanetState state;
     state.owner = owner_;
-    state.ships = num_ships_;
+    state.ships = num_ships_ + ( owner_ == ME ? incoming_fleets_[0].first : incoming_fleets_[0].second);
     prediction_.push_back(state);
     int growth_rate = Map::GrowthRate( planet_id_ );
     std::vector<int> sort_states(3,0);
