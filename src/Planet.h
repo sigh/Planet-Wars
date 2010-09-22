@@ -39,18 +39,15 @@ class Planet {
     // The number of ships coming to the planet owned by given player
     int IncomingShips(int player_id) const;
 
+    // Try to remove amount ships and return the number of ships actually removed
+    int RemoveShips(int amount);
+
     // The number of ships on the planet OR coming to the planet
     // owned by given player
     int TotalShips(int player_id) const;
 
-    // Use the following functions to set the properties of this planet. Note
-    // that these functions only affect your program's copy of the game state.
-    // You can't steal your opponent's planets just by changing the owner to 1
-    // using the Owner(int) function! :-)
-    void AddShips(int amount);
-    void RemoveShips(int amount);
-
     void AddIncomingFleet( const Fleet& f, int delay=0);
+    void LockShips( int ships );
     PlanetState FutureState(int days) const;
     int FutureOwner() const;
     int Cost( int days ) const;
@@ -69,6 +66,7 @@ class Planet {
     mutable bool update_prediction_;
 
     void UpdatePrediction() const;
+
 };
 
 #endif

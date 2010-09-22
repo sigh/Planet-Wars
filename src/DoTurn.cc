@@ -53,12 +53,9 @@ void DoTurn(PlanetWars& pw, int turn) {
             }
         }
 
-        int score = CostAnalysis(pw, p).second;
+        int score = CostAnalysis(pw,p).second;
 
-        // if ( cost <= available_ships ) {  // Try putting this back in
-            scores.push_back( std::pair<int,int>(score, p_id) );
-            LOG( "  score of planet " << p_id << " = " << score );
-        // }
+        scores.push_back( std::pair<int,int>(score, p_id) );
     }
 
     // sort scores
@@ -127,7 +124,7 @@ void Defence(PlanetWars& pw) {
         if ( required_ships > 0 ) { 
             // TODO: This might be impacting the prediction so see if we can fix it
             //       (Idea send a zero day fleet)
-            p->RemoveShips(required_ships);
+            p->LockShips(required_ships);
 
             LOG( " " << "Locking " << required_ships << " ships on planet " << p->PlanetID() );
         }
@@ -253,6 +250,7 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
             // easy case: we arrive after all the other fleets
             PlanetState prediction = p->FutureState( distance );
             cost = prediction.ships;
+
             if ( future_owner ) {
                 // For an enemy planet:
                 //   the number of days to travel to the planet 
@@ -324,6 +322,7 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
         }
     }
 
+    LOG( "  score of planet " << p_id << " = " << score << " (" <<  cost << ") after " << delay << " days" );
     if ( cost > available_ships ) {
         cost = INF;
     }
