@@ -11,6 +11,7 @@ void Redistribution(PlanetWars& pw);
 int ClosestPlanetByOwner(const PlanetWars& pw, int planet, int player);
 std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p);
 std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<Order>& orders);
+std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player);
 
 const int INF = 999999;
 
@@ -128,18 +129,29 @@ void Defence(PlanetWars& pw) {
 
             LOG( " " << "Locking " << required_ships << " ships on planet " << p->PlanetID() );
         }
+
+        // Anti-rage
+        
+        // planets suseptible to rage
+        // const std::map<int,bool> frontier_planets = FrontierPlanets(pw, ME);
+
+
     }
 }
 
-void Redistribution(PlanetWars& pw) {
-    const std::vector<PlanetPtr> enemy_planets = pw.PlanetsOwnedBy(ENEMY);
-
-    // Lock planets which are closest to an enemy
-    std::map<int,bool> locked_planets;
-    for (int i = 0; i < enemy_planets.size(); ++i) {
-        int p = enemy_planets[i]->PlanetID();
-        locked_planets[ClosestPlanetByOwner(pw,p,ME)] = true;
+// Find planets closest to the eneny
+std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player) {
+    std::map<int,bool> frontier_planets;
+    const std::vector<PlanetPtr> opponent_planets = pw.PlanetsOwnedBy(player == ME ? ENEMY : ME);
+    for (int i = 0; i < opponent_planets.size(); ++i) {
+        int p = opponent_planets[i]->PlanetID();
+        frontier_planets[ClosestPlanetByOwner(pw,p,player)] = true;
     }
+    return frontier_planets;
+}
+
+void Redistribution(PlanetWars& pw) {
+    std::map<int,bool> locked_planets = FrontierPlanets(pw, ME);
 
     // determine distances of own planets
     const std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
