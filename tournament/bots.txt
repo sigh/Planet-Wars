@@ -13,6 +13,7 @@ RedistA1 bot/RedistA1
 Redist2 bot/Redist2
 Redist2A bot/Redist2A
 RageP bot/RageP
+RageP2 bot/RageP2
 # *Dual java -jar example_bots/DualBot.jar
 #*Rage java -jar example_bots/RageBot.jar
 
