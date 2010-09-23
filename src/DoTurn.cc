@@ -133,9 +133,28 @@ void Defence(PlanetWars& pw) {
         // Anti-rage
         
         // planets suseptible to rage
-        // const std::map<int,bool> frontier_planets = FrontierPlanets(pw, ME);
+        std::map<int,bool> frontier_planets = FrontierPlanets(pw, ME);
+        std::map<int,bool>::iterator it;
+        for ( it=frontier_planets.begin(); it != frontier_planets.end(); ++it ) {
+            if ( ! it->second ) continue;
 
+            int p_id = it->first;
+            PlanetPtr p = pw.GetPlanet(p_id);
+            int closest_enemy = ClosestPlanetByOwner( pw, p_id, ENEMY );
 
+            // If there is no closest enemy then we don't need rage protection
+            if ( closest_enemy < 0 ) return;
+
+            PlanetPtr enemy = pw.GetPlanet(closest_enemy);
+            int distance = Map::Distance(closest_enemy, p_id);
+            required_ships = enemy->Ships() - distance*Map::GrowthRate(p_id);
+
+            // we don't need any help
+            if ( required_ships <= 0 ) continue;
+
+            p->LockShips(required_ships);
+            LOG( " " << "Locking " << required_ships << " ships on planet " << p->PlanetID() << " against enemy " << closest_enemy );
+        }
     }
 }
 
