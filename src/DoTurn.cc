@@ -129,32 +129,44 @@ void Defence(PlanetWars& pw) {
 
             LOG( " " << "Locking " << required_ships << " ships on planet " << p->PlanetID() );
         }
+    }
 
-        // Anti-rage
-        
-        // planets suseptible to rage
-        std::map<int,bool> frontier_planets = FrontierPlanets(pw, ME);
-        std::map<int,bool>::iterator it;
-        for ( it=frontier_planets.begin(); it != frontier_planets.end(); ++it ) {
-            if ( ! it->second ) continue;
+    // Anti-rage
 
-            int p_id = it->first;
-            PlanetPtr p = pw.GetPlanet(p_id);
-            int closest_enemy = ClosestPlanetByOwner( pw, p_id, ENEMY );
+    std::map<int,bool> frontier_planets = FrontierPlanets(pw, ME);
+    std::map<int,bool>::iterator it;
+    for ( it=frontier_planets.begin(); it != frontier_planets.end(); ++it ) {
+        if ( ! it->second ) continue;
 
-            // If there is no closest enemy then we don't need rage protection
-            if ( closest_enemy < 0 ) return;
+        int p_id = it->first;
+        PlanetPtr p = pw.GetPlanet(p_id);
+        int closest_enemy = ClosestPlanetByOwner( pw, p_id, ENEMY );
 
-            PlanetPtr enemy = pw.GetPlanet(closest_enemy);
-            int distance = Map::Distance(closest_enemy, p_id);
-            required_ships = enemy->Ships() - distance*Map::GrowthRate(p_id);
+        // If there is no closest enemy then we don't need rage protection
+        if ( closest_enemy < 0 ) return;
 
-            // we don't need any help
-            if ( required_ships <= 0 ) continue;
+        PlanetPtr enemy = pw.GetPlanet(closest_enemy);
+        int distance = Map::Distance(closest_enemy, p_id);
+        int required_ships = enemy->Ships() - distance*Map::GrowthRate(p_id);
 
-            p->LockShips(required_ships);
-            LOG( " " << "Locking " << required_ships << " ships on planet " << p->PlanetID() << " against enemy " << closest_enemy );
+        // we don't need any help
+        if ( required_ships <= 0 ) continue;
+
+        // enslist help
+        const std::vector<int>& sorted = Map::PlanetsByDistance( p_id );
+        for ( int i=1; i<sorted.size(); ++i ) {
+            const PlanetPtr p = pw.GetPlanet(sorted[i]);
+            if ( p->Owner() != ME ) continue;
+
+            int help_distance =  Map::Distance(p_id, sorted[i]);
+            if ( help_distance >= distance ) break;
+            required_ships -= p->Ships() + (distance-help_distance-1)*Map::GrowthRate(sorted[i]);
         }
+
+        if ( required_ships <= 0 ) continue;
+        p->LockShips(required_ships);
+
+        LOG( " " << "Locking " << required_ships << " ships on planet " << p->PlanetID() << " against enemy " << closest_enemy );
     }
 }
 
