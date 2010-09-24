@@ -25,6 +25,7 @@ void DoTurn(PlanetWars& pw, int turn) {
     std::vector<PlanetPtr> planets = pw.Planets();
     std::vector< std::pair<int,int> > scores;
 
+    std::map<int,bool> targets = FrontierPlanets(pw, ENEMY); 
     for (int p_id=0; p_id<planets.size(); ++p_id) {
         const PlanetPtr p = planets[p_id];
         int growth_rate = Map::GrowthRate(p_id);
@@ -52,6 +53,10 @@ void DoTurn(PlanetWars& pw, int turn) {
             if ( closest_enemy >= 0 && closest_me >= 0  && Map::Distance( closest_enemy, p_id ) <= Map::Distance( closest_me, p_id) ) {
                 continue;
             }
+        }
+
+        if ( p->Owner() == ENEMY && ! targets[p_id] ) {
+            continue;
         }
 
         int score = CostAnalysis(pw,p).second;
