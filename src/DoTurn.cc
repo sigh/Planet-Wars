@@ -12,6 +12,7 @@ int ClosestPlanetByOwner(const PlanetWars& pw, int planet, int player);
 std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p);
 std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<Order>& orders);
 std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player);
+std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player);
 
 const int INF = 999999;
 
@@ -25,7 +26,8 @@ void DoTurn(PlanetWars& pw, int turn) {
     std::vector<PlanetPtr> planets = pw.Planets();
     std::vector< std::pair<int,int> > scores;
 
-    std::map<int,bool> targets = FrontierPlanets(pw, ENEMY); 
+    std::map<int,bool> targets_1 = FrontierPlanets(pw, ENEMY); 
+    std::map<int,bool> targets_2 = FutureFrontierPlanets(pw, ENEMY); 
     for (int p_id=0; p_id<planets.size(); ++p_id) {
         const PlanetPtr p = planets[p_id];
         int growth_rate = Map::GrowthRate(p_id);
@@ -55,7 +57,13 @@ void DoTurn(PlanetWars& pw, int turn) {
             }
         }
 
-        if ( p->Owner() == ENEMY && ! targets[p_id] ) {
+        // If the planet is owned by an enemy and it is NOT a frontier planet then ignore
+        if ( p->Owner() == ENEMY && ! ( targets_1[p_id] || targets_2[p_id] ) ) {
+            continue;
+        }
+
+        // Don't try to neutral steal planets that we would not otherwise attack
+        if ( future_owner == ENEMY && p->Owner() == NEUTRAL && ! targets_2[p_id] ) {
             continue;
         }
 
@@ -175,7 +183,7 @@ void Defence(PlanetWars& pw) {
     }
 }
 
-// Find planets closest to the eneny
+// Find planets closest to the opponent
 std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player) {
     std::map<int,bool> frontier_planets;
     const std::vector<PlanetPtr> opponent_planets = pw.PlanetsOwnedBy(player == ME ? ENEMY : ME);
@@ -183,6 +191,29 @@ std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player) {
         int p = opponent_planets[i]->PlanetID();
         frontier_planets[ClosestPlanetByOwner(pw,p,player)] = true;
     }
+    return frontier_planets;
+}
+
+// Find planets that will be closest to the opponent
+std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player) {
+    std::map<int,bool> frontier_planets;
+    const int opponent = player == ME ? ENEMY : ME;
+
+    const std::vector<PlanetPtr> opponent_planets = pw.PlanetsOwnedBy(opponent);
+
+    // determine future player planets
+    for ( int i=0; i<opponent_planets.size(); ++i ) {
+        const std::vector<int>& sorted = Map::PlanetsByDistance( opponent_planets[i]->PlanetID() );
+        int closest = -1;
+        for (int i=1; i < sorted.size(); ++i) {
+            if ( pw.GetPlanet(sorted[i])->FutureOwner() == player ) {
+                closest = sorted[i];
+                break;
+            }
+        }
+        frontier_planets[closest] = true;
+    }
+
     return frontier_planets;
 }
 
