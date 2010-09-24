@@ -10,6 +10,12 @@ OPTIONS = {
     'param': 'game_id',
 }
 
+BOOLEAN_OPTIONS = [
+    'map_only',
+    'swap_players',
+    'raw'
+]
+
 def game_data(playback_string):
     result = []
     planets, playback = playback_string.split('|')
@@ -58,7 +64,7 @@ def get_data(game_id):
         return dict(item.split('=',2) for item in match.group(1).split('\\n') if item)
 
 def parse_args():
-    opts, args = getopt.getopt(sys.argv[1:], "", [o+"=" for o in OPTIONS] + ['map_only', 'swap_players'])
+    opts, args = getopt.getopt(sys.argv[1:], "", [o+"=" for o in OPTIONS] + BOOLEAN_OPTIONS)
     for o, a in opts:
         OPTIONS[o[2:]] = a
     return args
@@ -67,4 +73,7 @@ if __name__ == "__main__":
     args = parse_args()
     data = get_data(args[0])
 
-    print game_data(data['playback_string'])
+    if 'raw' in OPTIONS:
+        print data['playback_string']
+    else:
+        print game_data(data['playback_string'])
