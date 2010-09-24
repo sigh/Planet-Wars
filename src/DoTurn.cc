@@ -8,6 +8,7 @@
 
 void Defence(PlanetWars& pw);
 void Redistribution(PlanetWars& pw);
+void Harass(PlanetWars& pw, int planet, std::vector<Order>& orders);
 int ClosestPlanetByOwner(const PlanetWars& pw, int planet, int player);
 std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p);
 std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<Order>& orders);
@@ -96,6 +97,7 @@ void DoTurn(PlanetWars& pw, int turn) {
             //  1. Prevent us overextending our forces
             //  2. If we wait we might get the required resources later
             //  3. This helps against Rage tactics
+            // Harass(pw, p_id, orders);
             break;
         }
         
@@ -259,6 +261,22 @@ void Redistribution(PlanetWars& pw) {
             pw.IssueOrder(Order(p_id, closest, p->Ships()));
         }
     }
+}
+
+void Harass(PlanetWars& pw, int planet, std::vector<Order>& orders) {
+    if ( orders.size() < 1 ) return;
+    Order& order = orders[0];
+
+    // ensure that the destination is owned by the enemy
+    if ( pw.GetPlanet(order.dest)->Owner() != ENEMY ) return;
+
+    // ensure that the source is a frontier planet
+    std::map<int,bool> frontier_planets = FrontierPlanets(pw, ME);
+    if ( ! frontier_planets[order.source] ) return;
+
+    // Issue the harassment order
+    LOG( " Harassing " << order.dest << " from " << order.source );
+    pw.IssueOrder(order);
 }
 
 // Determine the clostest planet to the given planet owned by player
