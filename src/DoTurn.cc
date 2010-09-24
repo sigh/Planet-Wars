@@ -8,9 +8,12 @@
 
 void Defence(PlanetWars& pw);
 void Redistribution(PlanetWars& pw);
+void Harass(PlanetWars& pw, int planet, std::vector<Order>& orders);
 int ClosestPlanetByOwner(const PlanetWars& pw, int planet, int player);
 std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p);
 std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<Order>& orders);
+std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player);
+std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player);
 
 const int INF = 999999;
 
@@ -24,6 +27,8 @@ void DoTurn(PlanetWars& pw, int turn) {
     std::vector<PlanetPtr> planets = pw.Planets();
     std::vector< std::pair<int,int> > scores;
 
+    std::map<int,bool> targets_1 = FrontierPlanets(pw, ENEMY); 
+    std::map<int,bool> targets_2 = FutureFrontierPlanets(pw, ENEMY); 
     for (int p_id=0; p_id<planets.size(); ++p_id) {
         const PlanetPtr p = planets[p_id];
         int growth_rate = Map::GrowthRate(p_id);
@@ -51,6 +56,16 @@ void DoTurn(PlanetWars& pw, int turn) {
             if ( closest_enemy >= 0 && closest_me >= 0  && Map::Distance( closest_enemy, p_id ) <= Map::Distance( closest_me, p_id) ) {
                 continue;
             }
+        }
+
+        // If the planet is owned by an enemy and it is NOT a frontier planet then ignore
+        if ( p->Owner() == ENEMY && ! ( targets_1[p_id] || targets_2[p_id] ) ) {
+            continue;
+        }
+
+        // Don't try to neutral steal planets that we would not otherwise attack
+        if ( future_owner == ENEMY && p->Owner() == NEUTRAL && ! targets_2[p_id] ) {
+            continue;
         }
 
         int score = CostAnalysis(pw,p).second;
@@ -82,6 +97,7 @@ void DoTurn(PlanetWars& pw, int turn) {
             //  1. Prevent us overextending our forces
             //  2. If we wait we might get the required resources later
             //  3. This helps against Rage tactics
+            // Harass(pw, p_id, orders);
             break;
         }
         
@@ -129,17 +145,82 @@ void Defence(PlanetWars& pw) {
             LOG( " " << "Locking " << required_ships << " ships on planet " << p->PlanetID() );
         }
     }
+
+    // Anti-rage
+
+    std::map<int,bool> frontier_planets = FrontierPlanets(pw, ME);
+    std::map<int,bool>::iterator it;
+    for ( it=frontier_planets.begin(); it != frontier_planets.end(); ++it ) {
+        if ( ! it->second ) continue;
+
+        int p_id = it->first;
+        PlanetPtr p = pw.GetPlanet(p_id);
+        int closest_enemy = ClosestPlanetByOwner( pw, p_id, ENEMY );
+
+        // If there is no closest enemy then we don't need rage protection
+        if ( closest_enemy < 0 ) return;
+
+        PlanetPtr enemy = pw.GetPlanet(closest_enemy);
+        int distance = Map::Distance(closest_enemy, p_id);
+        int required_ships = enemy->Ships() - distance*Map::GrowthRate(p_id);
+
+        // we don't need any help
+        if ( required_ships <= 0 ) continue;
+
+        // enslist help
+        const std::vector<int>& sorted = Map::PlanetsByDistance( p_id );
+        for ( int i=1; i<sorted.size(); ++i ) {
+            const PlanetPtr p = pw.GetPlanet(sorted[i]);
+            if ( p->Owner() != ME ) continue;
+
+            int help_distance =  Map::Distance(p_id, sorted[i]);
+            if ( help_distance >= distance ) break;
+            required_ships -= p->Ships() + (distance-help_distance-1)*Map::GrowthRate(sorted[i]);
+        }
+
+        if ( required_ships <= 0 ) continue;
+        p->LockShips(required_ships);
+
+        LOG( " " << "Locking " << required_ships << " ships on planet " << p->PlanetID() << " against enemy " << closest_enemy );
+    }
+}
+
+// Find planets closest to the opponent
+std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player) {
+    std::map<int,bool> frontier_planets;
+    const std::vector<PlanetPtr> opponent_planets = pw.PlanetsOwnedBy(player == ME ? ENEMY : ME);
+    for (int i = 0; i < opponent_planets.size(); ++i) {
+        int p = opponent_planets[i]->PlanetID();
+        frontier_planets[ClosestPlanetByOwner(pw,p,player)] = true;
+    }
+    return frontier_planets;
+}
+
+// Find planets that will be closest to the opponent
+std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player) {
+    std::map<int,bool> frontier_planets;
+    const int opponent = player == ME ? ENEMY : ME;
+
+    const std::vector<PlanetPtr> opponent_planets = pw.PlanetsOwnedBy(opponent);
+
+    // determine future player planets
+    for ( int i=0; i<opponent_planets.size(); ++i ) {
+        const std::vector<int>& sorted = Map::PlanetsByDistance( opponent_planets[i]->PlanetID() );
+        int closest = -1;
+        for (int i=1; i < sorted.size(); ++i) {
+            if ( pw.GetPlanet(sorted[i])->FutureOwner() == player ) {
+                closest = sorted[i];
+                break;
+            }
+        }
+        frontier_planets[closest] = true;
+    }
+
+    return frontier_planets;
 }
 
 void Redistribution(PlanetWars& pw) {
-    const std::vector<PlanetPtr> enemy_planets = pw.PlanetsOwnedBy(ENEMY);
-
-    // Lock planets which are closest to an enemy
-    std::map<int,bool> locked_planets;
-    for (int i = 0; i < enemy_planets.size(); ++i) {
-        int p = enemy_planets[i]->PlanetID();
-        locked_planets[ClosestPlanetByOwner(pw,p,ME)] = true;
-    }
+    std::map<int,bool> locked_planets = FrontierPlanets(pw, ME);
 
     // determine distances of own planets
     const std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
@@ -180,6 +261,22 @@ void Redistribution(PlanetWars& pw) {
             pw.IssueOrder(Order(p_id, closest, p->Ships()));
         }
     }
+}
+
+void Harass(PlanetWars& pw, int planet, std::vector<Order>& orders) {
+    if ( orders.size() < 1 ) return;
+    Order& order = orders[0];
+
+    // ensure that the destination is owned by the enemy
+    if ( pw.GetPlanet(order.dest)->Owner() != ENEMY ) return;
+
+    // ensure that the source is a frontier planet
+    std::map<int,bool> frontier_planets = FrontierPlanets(pw, ME);
+    if ( ! frontier_planets[order.source] ) return;
+
+    // Issue the harassment order
+    LOG( " Harassing " << order.dest << " from " << order.source );
+    pw.IssueOrder(order);
 }
 
 // Determine the clostest planet to the given planet owned by player
