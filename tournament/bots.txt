@@ -1,17 +1,21 @@
 Current src/MyBot
-PSimple3 bot/PSimple3
+#PSimple3 bot/PSimple3
 # PCost bot/PCost
 # PCost3 bot/PCost3
 # PCost4 bot/PCost4
 # PCost5 bot/PCost5
 # PCost6Lock bot/PCost6Lock
-PCost7Lock bot/PCost7Lock
-Dest bot/Dest
-Redist bot/Redist
-RedistA bot/RedistA
+#PCost7Lock bot/PCost7Lock
+# Dest bot/Dest
+# Redist bot/Redist
+# RedistA bot/RedistA
 RedistA1 bot/RedistA1
 Redist2 bot/Redist2
 Redist2A bot/Redist2A
+RageP bot/RageP
+RageP2 bot/RageP2
+Front bot/Front
+Front2 bot/Front2
 # *Dual java -jar example_bots/DualBot.jar
-*Rage java -jar example_bots/RageBot.jar
+#*Rage java -jar example_bots/RageBot.jar
 

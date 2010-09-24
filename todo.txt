@@ -11,3 +11,21 @@ If we are completely protected by own planets then we can send out full growth r
 For attaking enemies, value close distance much more highly
 
 Weakness/desirablity of planets MUST depend on surrounding location!
+
+Rage protection
+
+Value neutrals in central position more highly
+    (value any planets in central position more highly)
+
+Value of planets MUST depend on surrounding situation (try eigenvalue closeness)
+
+We are attacking enemies too far away because we think they are weak.
+    In reality they only have a low ship count because they are sending all units to 
+    other planets, and they can get reinforcements quicker than we can reach them.
+
+Anticipate opponent: 
+    effective growth rate - takes into account redistribution
+    closeness measures - planets are strong if they can get reinforcements before we reach them
+
+Handle defence as part of attack! To do this we have to allow src => dest fleets in attack mode. This 
+will also allow us to abandon planets.
