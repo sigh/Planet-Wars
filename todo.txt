@@ -9,3 +9,5 @@ Eg: redistributing to units on the other side of the enemy should be done with c
 If we are completely protected by own planets then we can send out full growth rate
 
 For attaking enemies, value close distance much more highly
+
+Weakness/desirablity of planets MUST depend on surrounding location!
