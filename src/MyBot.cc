@@ -190,10 +190,14 @@ int main(int argc, char *argv[]) {
     std::string map_data;
     int turn_number = 0;
 
-    LOG_INIT(argv[0]);
-    LOG( "Start logging" );
+    Config::Init(argc, argv);
 
-    Config::Parse(argc, argv);
+    LOG_INIT(argv[0], Config::Value<std::string>("log_file"));
+    // log the command used to run this program
+    for ( int i=0; i < argc; ++i ) { LOG_( argv[i] ); } LOG("");
+    // log the config options
+    LOG_(Config::String());
+    LOG( "START GAME" );
 
     while (true) {
         int c = std::cin.get();
