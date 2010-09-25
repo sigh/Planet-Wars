@@ -2,7 +2,8 @@
 #define CONFIG_H_
 
 namespace Config {
-    void Parse(int argc, char*argv[]);
+    void Init(int argc, char*argv[]);
+    void Print();
 }
 
 #endif
