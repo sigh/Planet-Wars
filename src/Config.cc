@@ -5,6 +5,7 @@
 #include <iostream>
 
 #ifdef DEBUG // for local (with boost)
+#include <fstream>
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
 #endif // DEBUG
@@ -98,6 +99,11 @@ namespace Config {
 
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, options), vm);
+
+        std::string config_filename = "MyBot.conf";
+        std::ifstream config_file(config_filename.c_str());
+        po::store(po::parse_config_file(config_file, options), vm);
+        config_file.close();
         po::notify(vm);
     }
 #else // for the main contest - no boost 
