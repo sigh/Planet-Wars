@@ -30,3 +30,11 @@ Handle defence as part of attack! To do this we have to allow src => dest fleets
 will also allow us to abandon planets.
 
 Redistribution should NOT send ships to a planet > distance to closest enemy
+
+Bot acting stupid in close combat: http://www.ai-contest.com/visualizer.php?game_id=4733861
+    - Idea: more conservative defence, don't just look at closest planet
+
+Planet selection: http://72.44.46.68/canvas?game_id=156244
+    - Why didn't I take the 1-ship neutral
+Planet selection: http://72.44.46.68/canvas?game_id=156066
+    - Analyse costs
