@@ -18,6 +18,12 @@ std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player);
 const int INF = 999999;
 
 void DoTurn(PlanetWars& pw, int turn) {
+    int my_planet_count = pw.PlanetsOwnedBy(ME).size();
+    if ( my_planet_count == 0 ) {
+        LOG(" We have no planets, we can make no actions");
+        return;
+    }
+
     LOG(" Defence phase");
 
     Defence(pw);
@@ -191,7 +197,10 @@ std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player) {
     const std::vector<PlanetPtr> opponent_planets = pw.PlanetsOwnedBy(player == ME ? ENEMY : ME);
     for (int i = 0; i < opponent_planets.size(); ++i) {
         int p = opponent_planets[i]->PlanetID();
-        frontier_planets[ClosestPlanetByOwner(pw,p,player)] = true;
+        int closest = ClosestPlanetByOwner(pw,p,player);
+        if ( closest >= 0 ) {
+            frontier_planets[closest] = true;
+        }
     }
     return frontier_planets;
 }
@@ -213,7 +222,9 @@ std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player) {
                 break;
             }
         }
-        frontier_planets[closest] = true;
+        if ( closest >= 0 ) {
+            frontier_planets[closest] = true;
+        }
     }
 
     return frontier_planets;
