@@ -15,11 +15,10 @@ template<typename T> class ConfigMap {
         }
 
         void Print() {
-            std::cout << "foo";
-            // std::map<std::string,T>::iterator it;
-            // for ( it = config_.begin(); it != config_.end(); ++it ) {
-            //     cout << it->first << " = " << it->second;
-            // }
+            typename std::map<std::string,T>::iterator it;
+            for ( it = config_.begin(); it != config_.end(); ++it ) {
+                std::cout << it->first << " = " << it->second << std::endl;
+            }
         }
 
     private: 
