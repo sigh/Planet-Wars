@@ -7,13 +7,15 @@ import getopt
 
 OPTIONS = {
     'url': "http://www.ai-contest.com/visualizer.php",
+    'tcp-url': "http://72.44.46.68/canvas",
     'param': 'game_id',
 }
 
 BOOLEAN_OPTIONS = [
     'map_only',
     'swap_players',
-    'raw'
+    'raw',
+    'tcp',
 ]
 
 def game_data(playback_string):
@@ -71,6 +73,9 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
+    if 'tcp' in OPTIONS:
+        OPTIONS['url'] = OPTIONS['tcp-url']
+
     data = get_data(args[0])
 
     if 'raw' in OPTIONS:
