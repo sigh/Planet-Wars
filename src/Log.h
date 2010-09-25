@@ -1,10 +1,10 @@
 #ifndef LOG_H_
 #define LOG_H_
 
-#ifdef DEBUG
-
-#include <fstream>
 #include <string>
+
+#ifdef DEBUG
+#include <fstream>
 
 extern std::ofstream LOG_FILE;
 extern std::ofstream LOG_ERROR_FILE;
