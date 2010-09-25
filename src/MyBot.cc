@@ -192,7 +192,7 @@ int main(int argc, char *argv[]) {
 
     Config::Init(argc, argv);
 
-    LOG_INIT(argv[0]);
+    LOG_INIT(argv[0], Config::Value<std::string>("log_file"));
     LOG_(Config::String());
     LOG( "Start logging" );
 
