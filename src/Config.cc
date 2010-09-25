@@ -1,4 +1,5 @@
 #include "Config.h"
+#include "Log.h"
 #include <string>
 #include <map>
 #include <iostream>
@@ -16,6 +17,21 @@ template<typename T> class ConfigMap {
             return config_[key];
         }
 
+        // return the vaue for the config item key
+        //  or else throw an error
+        T find( const std::string& key ) {
+            iterator found = config_.find(key);
+            if ( found != config_.end() ) {
+                return found->second;
+            }
+
+            // program should never be asking for keys that don't exist
+            std::string error = "Invalid config item: " + key;
+            LOG_ERROR(error);
+            throw error;
+        }
+
+        // Print out all the config items
         void Print() {
             iterator it;
             for ( it = config_.begin(); it != config_.end(); ++it ) {
@@ -46,6 +62,11 @@ namespace Config {
         SetupDefaults();
         Parse(argc, argv);
     }
+
+    // Lookup values of each type
+    template<> int    Value<int>   (const std::string& key) { return int_config_.find(key); }
+    template<> bool   Value<bool>  (const std::string& key) { return bool_config_.find(key); }
+    template<> double Value<double>(const std::string& key) { return double_config_.find(key); }
 
     // print all config options
     void Print() {
