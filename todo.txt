@@ -27,3 +27,6 @@ Anticipate opponent:
 
 Handle defence as part of attack! To do this we have to allow src => dest fleets in attack mode. This 
 will also allow us to abandon planets.
+
+Bot acting stupid in close combat: http://www.ai-contest.com/visualizer.php?game_id=4733861
+    - Idea: more conservative defence, don't just look at closest planet
