@@ -16,6 +16,7 @@ RageP bot/RageP
 RageP2 bot/RageP2
 Front bot/Front
 Front2 bot/Front2
+RedistD bot/RedistD
 # *Dual java -jar example_bots/DualBot.jar
 #*Rage java -jar example_bots/RageBot.jar
 
