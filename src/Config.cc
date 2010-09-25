@@ -10,12 +10,14 @@ namespace po = boost::program_options;
 
 template<typename T> class ConfigMap {
     public:
+        typedef typename std::map<std::string,T>::iterator iterator;
+
         T& operator[] ( const std::string& key ) {
             return config_[key];
         }
 
         void Print() {
-            typename std::map<std::string,T>::iterator it;
+            iterator it;
             for ( it = config_.begin(); it != config_.end(); ++it ) {
                 std::cout << it->first << " = " << it->second << std::endl;
             }
