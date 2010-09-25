@@ -231,6 +231,9 @@ void Redistribution(PlanetWars& pw) {
         distances[me] = enemy >= 0 ? Map::Distance(me, enemy) : 0;
     }
 
+    std::map<int,int> redist_map;
+
+    // determine 1 step redistribution
     for (int i = 0; i < my_planets.size(); ++i) {
         PlanetPtr p = my_planets[i];
         int p_id = p->PlanetID();
@@ -257,9 +260,15 @@ void Redistribution(PlanetWars& pw) {
 
         // If we found a planet, then send half available ships there
         if (closest >= 0) {
-            LOG( " Redistributing from " << p_id << " to " << closest );
-            pw.IssueOrder(Order(p_id, closest, p->Ships()));
+            redist_map[p_id] = closest;
         }
+    }
+
+    // Output the redistributions
+    std::map<int,int>::iterator it;
+    for ( it=redist_map.begin(); it != redist_map.end(); ++it ) { 
+        pw.IssueOrder(Order(it->first, it->second, pw.GetPlanet(it->first)->Ships()));
+        LOG( " Redistributing from " << it->first << " to " << it->second );
     }
 }
 
