@@ -39,6 +39,19 @@ template<typename T> class ConfigMap {
             }
         }
 
+        iterator begin() { return config_.begin(); }
+
+        iterator end() { return config_.end(); }
+
+#ifdef DEBUG
+        void SetupOptions(po::options_description& options) {
+            iterator it;
+            for ( it = config_.begin(); it != config_.end(); ++it ) {
+                options.add_options()(it->first.c_str(), po::value<T>(&(it->second))->default_value(it->second));
+            }
+        }
+#endif // DEBUG
+
     private: 
         std::map<std::string,T> config_;
 };
@@ -77,7 +90,15 @@ namespace Config {
 
 #ifdef DEBUG // for local (with boost)
     void Parse(int argc, char*argv[]) {
+        po::options_description options("Options");
 
+        int_config_.SetupOptions(options);
+        bool_config_.SetupOptions(options);
+        double_config_.SetupOptions(options);
+
+        po::variables_map vm;
+        po::store(po::parse_command_line(argc, argv, options), vm);
+        po::notify(vm);
     }
 #else // for the main contest - no boost 
     // no command line options in the main contest
