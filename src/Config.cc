@@ -61,6 +61,7 @@ namespace Config {
     ConfigMap<int> int_config_;
     ConfigMap<bool> bool_config_;
     ConfigMap<double> double_config_;
+    ConfigMap<std::string> string_config_;
 
     void Parse(int argc, char*argv[]);
 
@@ -69,6 +70,7 @@ namespace Config {
         int_config_["foo"] = 1;
         bool_config_["bar"] = false;
         double_config_["baz"] = 1.2;
+        string_config_["config_file"] = "MyBot.conf";
     }
 
     // init config
@@ -78,9 +80,10 @@ namespace Config {
     }
 
     // Lookup values of each type
-    template<> int    Value<int>   (const std::string& key) { return int_config_.find(key); }
-    template<> bool   Value<bool>  (const std::string& key) { return bool_config_.find(key); }
+    template<> int    Value<int>(const std::string& key) { return int_config_.find(key); }
+    template<> bool   Value<bool>(const std::string& key) { return bool_config_.find(key); }
     template<> double Value<double>(const std::string& key) { return double_config_.find(key); }
+    template<> std::string Value<std::string>(const std::string& key) { return string_config_.find(key); }
 
     // print all config options
     void Print() {
@@ -96,12 +99,15 @@ namespace Config {
         int_config_.SetupOptions(options);
         bool_config_.SetupOptions(options);
         double_config_.SetupOptions(options);
+        string_config_.SetupOptions(options);
 
+        // command line options
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, options), vm);
+        po::notify(vm);
 
-        std::string config_filename = "MyBot.conf";
-        std::ifstream config_file(config_filename.c_str());
+        // config file options
+        std::ifstream config_file(Value<std::string>("config_file").c_str());
         po::store(po::parse_config_file(config_file, options), vm);
         config_file.close();
         po::notify(vm);
