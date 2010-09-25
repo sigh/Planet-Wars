@@ -264,8 +264,29 @@ void Redistribution(PlanetWars& pw) {
         }
     }
 
-    // Output the redistributions
     std::map<int,int>::iterator it;
+    std::map<int,int>::iterator found;
+
+    // send ships directly to the end of the redistribution chain
+    // this means that more ships get to the front lines quicker
+    // it also means that planets in the middle have permanently locked ships
+    //    (because growth and arrivals are processed AFTER we make our
+    //    move order but BEFORE the orders are carried out)
+    //
+    // Possibly experiment with more conserative skips
+    //    (maybe for defence mode - higher growth rate, lower ships)
+    for ( it=redist_map.begin(); it != redist_map.end(); ++it ) { 
+        int source = it->first;
+        int dest = it->second;
+        int current = source;
+        while ( (found = redist_map.find(dest)) != redist_map.end() ) {
+            current = dest;
+            dest = found->second;
+        }
+        redist_map[source] = dest;
+    }
+
+    // Output the redistributions
     for ( it=redist_map.begin(); it != redist_map.end(); ++it ) { 
         pw.IssueOrder(Order(it->first, it->second, pw.GetPlanet(it->first)->Ships()));
         LOG( " Redistributing from " << it->first << " to " << it->second );
