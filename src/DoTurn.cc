@@ -372,8 +372,8 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
             int best_score = INF;
             int best_cost = 0;
 
-            // determine the best day to arrive on
-            for ( int arrive = future_days; arrive >= distance; --arrive ) {
+            // determine the best day to arrive on, we search up to 12 day AFTER the last fleet arrives
+            for ( int arrive = future_days+1; arrive >= distance; --arrive ) {
                 // TODO: Another magic param 
                 int cost = p->Cost( arrive ); 
 
@@ -385,6 +385,7 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
                     best_cost = cost;
                 }
             }
+
             score = best_score;
             cost = best_cost;
         }
