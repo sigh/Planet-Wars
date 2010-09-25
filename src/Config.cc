@@ -60,6 +60,8 @@ template<typename T> class ConfigMap {
         std::map<std::string,T> config_;
 };
 
+#include <boost/program_options.hpp>
+
 namespace Config {
     ConfigMap<int> int_config_;
     ConfigMap<bool> bool_config_;
