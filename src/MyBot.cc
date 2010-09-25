@@ -190,10 +190,11 @@ int main(int argc, char *argv[]) {
     std::string map_data;
     int turn_number = 0;
 
+    Config::Init(argc, argv);
+    Config::Print();
+
     LOG_INIT(argv[0]);
     LOG( "Start logging" );
-
-    Config::Parse(argc, argv);
 
     while (true) {
         int c = std::cin.get();
