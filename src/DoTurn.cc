@@ -18,6 +18,12 @@ std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player);
 const int INF = 999999;
 
 void DoTurn(PlanetWars& pw, int turn) {
+    int my_planet_count = pw.PlanetsOwnedBy(ME).size();
+    if ( my_planet_count == 0 ) {
+        LOG(" We have no planets, we can make no actions");
+        return;
+    }
+
     LOG(" Defence phase");
 
     Defence(pw);
@@ -191,7 +197,10 @@ std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player) {
     const std::vector<PlanetPtr> opponent_planets = pw.PlanetsOwnedBy(player == ME ? ENEMY : ME);
     for (int i = 0; i < opponent_planets.size(); ++i) {
         int p = opponent_planets[i]->PlanetID();
-        frontier_planets[ClosestPlanetByOwner(pw,p,player)] = true;
+        int closest = ClosestPlanetByOwner(pw,p,player);
+        if ( closest >= 0 ) {
+            frontier_planets[closest] = true;
+        }
     }
     return frontier_planets;
 }
@@ -213,7 +222,9 @@ std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player) {
                 break;
             }
         }
-        frontier_planets[closest] = true;
+        if ( closest >= 0 ) {
+            frontier_planets[closest] = true;
+        }
     }
 
     return frontier_planets;
@@ -231,6 +242,9 @@ void Redistribution(PlanetWars& pw) {
         distances[me] = enemy >= 0 ? Map::Distance(me, enemy) : 0;
     }
 
+    std::map<int,int> redist_map;
+
+    // determine 1 step redistribution
     for (int i = 0; i < my_planets.size(); ++i) {
         PlanetPtr p = my_planets[i];
         int p_id = p->PlanetID();
@@ -257,9 +271,36 @@ void Redistribution(PlanetWars& pw) {
 
         // If we found a planet, then send half available ships there
         if (closest >= 0) {
-            LOG( " Redistributing from " << p_id << " to " << closest );
-            pw.IssueOrder(Order(p_id, closest, p->Ships()));
+            redist_map[p_id] = closest;
         }
+    }
+
+    std::map<int,int>::iterator it;
+    std::map<int,int>::iterator found;
+
+    // send ships directly to the end of the redistribution chain
+    // this means that more ships get to the front lines quicker
+    // it also means that planets in the middle have permanently locked ships
+    //    (because growth and arrivals are processed AFTER we make our
+    //    move order but BEFORE the orders are carried out)
+    //
+    // Possibly experiment with more conserative skips
+    //    (maybe for defence mode - higher growth rate, lower ships)
+    for ( it=redist_map.begin(); it != redist_map.end(); ++it ) { 
+        int source = it->first;
+        int dest = it->second;
+        int current = source;
+        while ( (found = redist_map.find(dest)) != redist_map.end() ) {
+            current = dest;
+            dest = found->second;
+        }
+        redist_map[source] = dest;
+    }
+
+    // Output the redistributions
+    for ( it=redist_map.begin(); it != redist_map.end(); ++it ) { 
+        pw.IssueOrder(Order(it->first, it->second, pw.GetPlanet(it->first)->Ships()));
+        LOG( " Redistributing from " << it->first << " to " << it->second );
     }
 }
 
@@ -372,8 +413,8 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
             int best_score = INF;
             int best_cost = 0;
 
-            // determine the best day to arrive on
-            for ( int arrive = future_days; arrive >= distance; --arrive ) {
+            // determine the best day to arrive on, we search up to 12 day AFTER the last fleet arrives
+            for ( int arrive = future_days+1; arrive >= distance; --arrive ) {
                 // TODO: Another magic param 
                 int cost = p->Cost( arrive ); 
 
@@ -385,6 +426,7 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
                     best_cost = cost;
                 }
             }
+
             score = best_score;
             cost = best_cost;
         }
