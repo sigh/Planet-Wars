@@ -14,6 +14,7 @@ Rage protection
 
 Value neutrals in central position more highly
     (value any planets in central position more highly)
+    - Try eigenvalue centrality - positive wieghts for friendly planets, negative for enemy
 
 Value of planets MUST depend on surrounding situation (try eigenvalue closeness)
 
@@ -27,3 +28,5 @@ Anticipate opponent:
 
 Handle defence as part of attack! To do this we have to allow src => dest fleets in attack mode. This 
 will also allow us to abandon planets.
+
+Redistribution should NOT send ships to a planet > distance to closest enemy
