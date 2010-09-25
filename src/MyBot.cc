@@ -191,9 +191,9 @@ int main(int argc, char *argv[]) {
     int turn_number = 0;
 
     Config::Init(argc, argv);
-    Config::Print();
 
     LOG_INIT(argv[0]);
+    LOG_(Config::String());
     LOG( "Start logging" );
 
     while (true) {

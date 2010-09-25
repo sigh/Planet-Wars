@@ -5,7 +5,7 @@
 
 namespace Config {
     void Init(int argc, char*argv[]);
-    void Print();
+    std::string String();
 
     template<typename T> T Value( const std::string& key );
 }

@@ -1,6 +1,7 @@
 #include "Config.h"
 #include "Log.h"
 #include <string>
+#include <sstream>
 #include <map>
 #include <iostream>
 
@@ -33,11 +34,13 @@ template<typename T> class ConfigMap {
         }
 
         // Print out all the config items
-        void Print() {
+        std::string String() {
+            std::stringstream s;
             iterator it;
             for ( it = config_.begin(); it != config_.end(); ++it ) {
-                std::cout << it->first << " = " << it->second << std::endl;
+                s << it->first << "=" << it->second << std::endl;
             }
+            return s.str();
         }
 
         iterator begin() { return config_.begin(); }
@@ -71,6 +74,7 @@ namespace Config {
         bool_config_["bar"] = false;
         double_config_["baz"] = 1.2;
         string_config_["config_file"] = "MyBot.conf";
+        string_config_["log_file"] = "";
     }
 
     // init config
@@ -85,14 +89,18 @@ namespace Config {
     template<> double Value<double>(const std::string& key) { return double_config_.find(key); }
     template<> std::string Value<std::string>(const std::string& key) { return string_config_.find(key); }
 
-    // print all config options
-    void Print() {
-        double_config_.Print();
-        int_config_.Print();
-        bool_config_.Print();
+    // Convert the options to a string
+    std::string String() {
+        std::stringstream s;
+        s   << double_config_.String()
+            << int_config_.String()
+            << bool_config_.String()
+            << string_config_.String();
+        return s.str();
     }
 
 #ifdef DEBUG // for local (with boost)
+
     void Parse(int argc, char*argv[]) {
         po::options_description options("Options");
 
