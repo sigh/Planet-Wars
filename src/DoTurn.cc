@@ -424,6 +424,10 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
             cost = prediction.ships;
 
             if ( future_owner ) {
+                // Uncomment to use effective growth rate
+                // PlanetState future_state = p->FutureState(future_days);
+                // cost = future_state.ships + ( distance - future_days ) * p->EffectiveGrowthRate(future_owner);
+
                 // TODO: determine the best factor for distance
                 score = ceil((double)cost/growth_rate/2.0) + distance*2;
                 // score = distance + distance/2;
