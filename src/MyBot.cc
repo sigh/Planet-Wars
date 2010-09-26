@@ -63,6 +63,19 @@ const int FLEET_DEST = 4;
 const int FLEET_LENGTH = 5;
 const int FLEET_REMAINING = 6;
 
+// convert player id from external representation to internal representation
+int ConvertPlayerID(int player_id) {
+    if ( player_id == 1 ) {
+        return ME;
+    }
+    else if ( player_id == 2 ) {
+        return ENEMY;
+    }
+    else {
+        return NEUTRAL;
+    }
+}
+
 PlanetWars ParseGameState(const std::string& game_state) {
     std::vector<PlanetPtr> planets;
     std::vector<Fleet> fleets;
@@ -84,7 +97,7 @@ PlanetWars ParseGameState(const std::string& game_state) {
             }
             PlanetPtr p( new Planet(
                 planet_id++, // The ID of this planet
-                atoi(tokens[PLANET_OWNER].c_str()),
+                ConvertPlayerID(atoi(tokens[PLANET_OWNER].c_str())),
                 atoi(tokens[PLANET_SHIPS].c_str())
             ));
             planets.push_back(p);
@@ -93,7 +106,7 @@ PlanetWars ParseGameState(const std::string& game_state) {
                 throw "Invalid fleet";
             }
             Fleet f;
-            f.owner = atoi(tokens[FLEET_OWNER].c_str()); 
+            f.owner = ConvertPlayerID(atoi(tokens[FLEET_OWNER].c_str())); 
             f.dest = atoi(tokens[FLEET_DEST].c_str()); 
             f.ships = atoi(tokens[FLEET_SHIPS].c_str()); 
             f.remaining = atoi(tokens[FLEET_REMAINING].c_str()); 
@@ -190,10 +203,14 @@ int main(int argc, char *argv[]) {
     std::string map_data;
     int turn_number = 0;
 
-    LOG_INIT(argv[0]);
-    LOG( "Start logging" );
+    Config::Init(argc, argv);
 
-    Config::Parse(argc, argv);
+    LOG_INIT(argv[0], Config::Value<std::string>("log_file"));
+    // log the command used to run this program
+    for ( int i=0; i < argc; ++i ) { LOG_( argv[i] ); } LOG("");
+    // log the config options
+    LOG_(Config::String());
+    LOG( "START GAME" );
 
     while (true) {
         int c = std::cin.get();

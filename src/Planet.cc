@@ -7,7 +7,7 @@
 Planet::Planet( int planet_id, int owner, int num_ships):
     planet_id_(planet_id), owner_(owner), num_ships_(num_ships),
     update_prediction_(true),
-    incoming_fleets_(1,FleetSummary(0,0)) { } 
+    incoming_fleets_(1,FleetSummary()) { } 
     
 int Planet::PlanetID() const {
     return planet_id_;
@@ -35,9 +35,7 @@ int Planet::IncomingShips(int player_id) const {
     int num_ships = 0;
 
     for ( int i=0; i < incoming_fleets_.size(); ++i ) {
-        num_ships += player_id == 1 
-            ? incoming_fleets_[i].first
-            : incoming_fleets_[i].second;
+        num_ships += incoming_fleets_[i][player_id];
     }
 
     return num_ships;
@@ -46,7 +44,7 @@ int Planet::IncomingShips(int player_id) const {
 int Planet::WeightedIncoming() const {
     int ships = 0;
     for ( int i=0; i < incoming_fleets_.size(); ++i ) {
-        ships += incoming_fleets_[i].first - incoming_fleets_[i].second;
+        ships += incoming_fleets_[i].delta(ME);
     }
     return ships;
 }
@@ -71,23 +69,17 @@ void Planet::AddIncomingFleet(const Fleet &f, int delay) {
 
     // ensure incoming_fleets_ is long enough
     if ( arrival + 1 > incoming_fleets_.size() ) {
-        incoming_fleets_.resize( arrival + 1, FleetSummary(0,0) );
+        incoming_fleets_.resize( arrival + 1, FleetSummary() );
     }
 
-    // update fleet numbers
-    if ( f.owner == 1 ) {
-        incoming_fleets_[arrival].first += f.ships;
-    }
-    else {
-        incoming_fleets_[arrival].second += f.ships;
-    }
+    incoming_fleets_[arrival][f.owner] += f.ships;
 
     update_prediction_ = true;
 }
 
 void Planet::LockShips(int ships) {
     ships = RemoveShips(ships);
-    incoming_fleets_[0].first += ships;
+    incoming_fleets_[0][ME] += ships;
 }
 
 // predicted owner after all fleets have arrived
@@ -103,6 +95,26 @@ PlanetState Planet::FutureState(int days) const {
         }
         return state;
     }
+}
+
+int Planet::EffectiveGrowthRate(int owner) const {
+    int num_days = incoming_fleets_.size();
+    int x = 5;
+    if ( num_days <= x ) { 
+        return Map::GrowthRate(planet_id_);
+    }
+
+    int delta_ships = 0;
+    for ( int day=x+1; day < num_days; ++day ) {
+        delta_ships += incoming_fleets_[day].delta(owner);
+    }
+
+    if ( delta_ships < 0 ) { 
+        delta_ships = 0;
+    }
+    num_days -= x;
+
+    return delta_ships / num_days + Map::GrowthRate(planet_id_);
 }
 
 // TODO: Make this work for any player anytime
@@ -127,16 +139,16 @@ int Planet::Cost( int days ) const {
         required_ships = prediction_[days].ships + 1;
 
         const FleetSummary &f = incoming_fleets_[days];
-        if ( f.first < f.second ) {
+        if ( f[ME] < f[ENEMY] ) {
             // If there is another attacking force (larger than us)
             // we need to overcome that one too
-            required_ships += f.second - f.first;
+            required_ships += f.delta(ENEMY);
         }
     }
     else if ( prev_owner == NEUTRAL ) {
         // opponent just took neutral with this move
         const FleetSummary &f = incoming_fleets_[days];
-        required_ships = f.second - f.first + 1;
+        required_ships = f.delta(ENEMY) + 1;
     }
     else {
         required_ships = prediction_[days].ships + 1;
@@ -145,7 +157,7 @@ int Planet::Cost( int days ) const {
     // TODO: Merge with required ships
     for ( int i = days+1; i < incoming_fleets_.size(); ++i ) {
         const FleetSummary &f = incoming_fleets_[i];
-        ships_delta += growth_rate + f.first - f.second;
+        ships_delta += growth_rate + f.delta(ME);
         if ( ships_delta < 0 ) {
             required_ships += -ships_delta;
             ships_delta = 0; 
@@ -178,7 +190,7 @@ void Planet::UpdatePrediction() const {
     // initialise current day
     PlanetState state;
     state.owner = owner_;
-    state.ships = num_ships_ + ( owner_ == ME ? incoming_fleets_[0].first : incoming_fleets_[0].second);
+    state.ships = num_ships_ + incoming_fleets_[0][owner_];
     prediction_.push_back(state);
     int growth_rate = Map::GrowthRate( planet_id_ );
     std::vector<int> sort_states(3,0);
@@ -187,43 +199,38 @@ void Planet::UpdatePrediction() const {
         const FleetSummary &f = incoming_fleets_[day];
 
         // grow planets which have an owner
-        if ( state.owner ) {
+        if ( state.owner != NEUTRAL ) {
             state.ships += growth_rate;
         }
 
-        // FIGHT
-        if ( state.owner == ME ) {
-            // my planet
-            state.ships += f.first - f.second;
-            if ( state.ships < 0 ) {
-                state.owner = ENEMY;
-                state.ships = -state.ships;
-            }
-        }
-        else if ( state.owner == ENEMY ) {
-            // enemy planet
-            state.ships += f.second - f.first;
-            if ( state.ships < 0 ) {
-                state.owner = ME;
-                state.ships = -state.ships;
-            }
-        }
-        else {
-            // neutral planet
-            sort_states[0] = state.ships;
-            sort_states[1] = f.first;
-            sort_states[2] = f.second;
-            sort( sort_states.begin(), sort_states.end() );
+        if ( ! f.empty() ) {
+            // There are ships: FIGHT
 
-            // the number of ships left is (the maximum minus the second highest)
-            state.ships = sort_states[2] - sort_states[1];
-            if ( state.ships > 0 ) {
-                // if there was a winner, determine who it was
-                if ( sort_states[2] == f.first ) {
-                    state.owner = ME;
+            if ( state.owner != NEUTRAL ) {
+                // occupied planet
+                state.ships += f.delta(state.owner);
+                if ( state.ships < 0 ) {
+                    state.owner = -state.owner;
+                    state.ships = -state.ships;
                 }
-                else if ( sort_states[2] == f.second ) {
-                    state.owner = ENEMY;
+            }
+            else {
+                // neutral planet
+                sort_states[0] = state.ships;
+                sort_states[1] = f[ME];
+                sort_states[2] = f[ENEMY];
+                sort( sort_states.begin(), sort_states.end() );
+
+                // the number of ships left is (the maximum minus the second highest)
+                state.ships = sort_states[2] - sort_states[1];
+                if ( state.ships > 0 ) {
+                    // if there was a winner, determine who it was
+                    if ( sort_states[2] == f[ME] ) {
+                        state.owner = ME;
+                    }
+                    else if ( sort_states[2] == f[ENEMY] ) {
+                        state.owner = ENEMY;
+                    }
                 }
             }
         }
@@ -244,7 +251,7 @@ int Planet::RequiredShips() const {
 
     for ( int day=1; day < incoming_fleets_.size(); ++day ) {
         const FleetSummary &f = incoming_fleets_[day];
-        ships_delta += growth_rate + f.first - f.second;
+        ships_delta += growth_rate + f.delta(ME);
         if ( ships_delta < 0 ) {
             required_ships += -ships_delta;
             ships_delta = 0; 
