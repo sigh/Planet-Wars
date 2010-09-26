@@ -199,34 +199,38 @@ void Planet::UpdatePrediction() const {
         const FleetSummary &f = incoming_fleets_[day];
 
         // grow planets which have an owner
-        if ( state.owner ) {
+        if ( state.owner != NEUTRAL ) {
             state.ships += growth_rate;
         }
 
-        // FIGHT
-        if ( state.owner != NEUTRAL ) {
-            state.ships += f.delta(state.owner);
-            if ( state.ships < 0 ) {
-                state.owner = -state.owner;
-                state.ships = -state.ships;
-            }
-        }
-        else {
-            // neutral planet
-            sort_states[0] = state.ships;
-            sort_states[1] = f[ME];
-            sort_states[2] = f[ENEMY];
-            sort( sort_states.begin(), sort_states.end() );
+        if ( ! f.empty() ) {
+            // There are ships: FIGHT
 
-            // the number of ships left is (the maximum minus the second highest)
-            state.ships = sort_states[2] - sort_states[1];
-            if ( state.ships > 0 ) {
-                // if there was a winner, determine who it was
-                if ( sort_states[2] == f[ME] ) {
-                    state.owner = ME;
+            if ( state.owner != NEUTRAL ) {
+                // occupied planet
+                state.ships += f.delta(state.owner);
+                if ( state.ships < 0 ) {
+                    state.owner = -state.owner;
+                    state.ships = -state.ships;
                 }
-                else if ( sort_states[2] == f[ENEMY] ) {
-                    state.owner = ENEMY;
+            }
+            else {
+                // neutral planet
+                sort_states[0] = state.ships;
+                sort_states[1] = f[ME];
+                sort_states[2] = f[ENEMY];
+                sort( sort_states.begin(), sort_states.end() );
+
+                // the number of ships left is (the maximum minus the second highest)
+                state.ships = sort_states[2] - sort_states[1];
+                if ( state.ships > 0 ) {
+                    // if there was a winner, determine who it was
+                    if ( sort_states[2] == f[ME] ) {
+                        state.owner = ME;
+                    }
+                    else if ( sort_states[2] == f[ENEMY] ) {
+                        state.owner = ENEMY;
+                    }
                 }
             }
         }
