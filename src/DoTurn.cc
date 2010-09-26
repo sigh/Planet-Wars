@@ -7,6 +7,8 @@
 #include "DoTurn.h"
 
 void Defence(PlanetWars& pw);
+void Flee(PlanetWars& pw);
+int AntiRageRequiredShips(PlanetWars &pw, int my_planet, int enemy_planet);
 void Redistribution(PlanetWars& pw);
 void Harass(PlanetWars& pw, int planet, std::vector<Order>& orders);
 int ClosestPlanetByOwner(const PlanetWars& pw, int planet, int player);
@@ -127,7 +129,59 @@ void DoTurn(PlanetWars& pw, int turn) {
 
     Redistribution(pw);
 
+    LOG(" Flee phase");
+
+    // Flee(pw);
+
     LOG(" Finishing up");
+}
+
+bool SortByGrowthRate(PlanetPtr a, PlanetPtr b) {
+    return Map::GrowthRate(a->PlanetID()) < Map::GrowthRate(b->PlanetID()); 
+}
+
+void Flee(PlanetWars& pw) {
+    std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
+    sort(my_planets.begin(), my_planets.end(), SortByGrowthRate);
+
+    std::vector<PlanetPtr> planets = pw.Planets();
+
+    for ( int i=0; i<my_planets.size(); ++i ) {
+        PlanetPtr p = my_planets[i]; 
+        if ( p->FutureOwner() == ME ) continue;
+
+        int p_id = p->PlanetID();
+        int ships = p->FutureState(0).ships;
+
+        int closest_distance = INF;
+        int destination = -1;
+
+        // if the future owner is not me then see if we can use our ships elsewhere
+        for ( int j=0; j<planets.size(); ++j ) {
+            if ( j == p_id ) continue; 
+
+            PlanetPtr dest = planets[j];
+            if ( dest->Owner() == NEUTRAL ) continue;
+            if ( dest->FutureOwner() != ENEMY ) continue;
+
+            int distance = Map::Distance(p_id, j);
+            int cost = dest->Cost(distance);
+
+            LOG( "   Cost from " << p_id << " to " << j << ": " << cost );
+
+            if ( cost > ships ) continue;
+
+            if ( distance < closest_distance ) {
+                closest_distance = distance;
+                destination = j;
+            }
+        }
+
+        if ( destination >= 0 ) {
+            pw.IssueOrder(Order(p_id, destination, ships));
+            LOG( " Fleeing from " << p_id << " to " << destination );
+        }
+    }
 }
 
 // Lock the required number of ships onto planets that are under attack
@@ -152,7 +206,16 @@ void Defence(PlanetWars& pw) {
         }
     }
 
-    // Anti-rage
+    // Anti rge level
+    // 0: None    |
+    // 1: closest | Increasing number of ships locked
+    // 2: max     |
+    // 3: sum     v
+    int anti_rage_level = Config::Value<int>("antirage");
+    if ( anti_rage_level == 0 ) {
+        // no rage protection
+        return;
+    }
 
     std::map<int,bool> frontier_planets = FrontierPlanets(pw, ME);
     std::map<int,bool>::iterator it;
@@ -161,40 +224,64 @@ void Defence(PlanetWars& pw) {
 
         int p_id = it->first;
         PlanetPtr p = pw.GetPlanet(p_id);
-        int closest_enemy = ClosestPlanetByOwner( pw, p_id, ENEMY );
 
-        // If there is no closest enemy then we don't need rage protection
-        if ( closest_enemy < 0 ) return;
+        int ships_locked;
 
-        PlanetPtr enemy = pw.GetPlanet(closest_enemy);
-        int distance = Map::Distance(closest_enemy, p_id);
-        int required_ships = enemy->Ships() - distance*Map::GrowthRate(p_id);
+        if ( anti_rage_level == 1 ) {
+            // defend against only the closest enemy
+            int closest_enemy = ClosestPlanetByOwner(pw, p_id, ENEMY);
+            if ( closest_enemy >= 0 ) {
+                ships_locked = AntiRageRequiredShips(pw, p_id, closest_enemy );
+            }
+        }
+        else {
+            // defend against all enemies
+            int max_required_ships = 0;
+            int sum_required_ships = 0;
+            std::vector<PlanetPtr> enemy_planets = pw.PlanetsOwnedBy(ENEMY);
+            for ( int i=0; i<enemy_planets.size(); ++i ) {
+                int required_ships = AntiRageRequiredShips(pw, p_id, enemy_planets[i]->PlanetID() );
+                if ( required_ships > max_required_ships ) {
+                    max_required_ships = required_ships;
+                }
+                sum_required_ships += required_ships;
+            }
 
-        // we don't need any help
-        if ( required_ships <= 0 ) continue;
-
-        // enslist help
-        const std::vector<int>& sorted = Map::PlanetsByDistance( p_id );
-        for ( int i=1; i<sorted.size(); ++i ) {
-            const PlanetPtr p = pw.GetPlanet(sorted[i]);
-            if ( p->Owner() != ME ) continue;
-
-            int help_distance =  Map::Distance(p_id, sorted[i]);
-            if ( help_distance >= distance ) break;
-            required_ships -= p->Ships() + (distance-help_distance-1)*Map::GrowthRate(sorted[i]);
+            ships_locked = anti_rage_level == 2 ? max_required_ships : sum_required_ships;
         }
 
-        if ( required_ships <= 0 ) continue;
-        p->LockShips(required_ships);
-
-        LOG( " " << "Locking " << required_ships << " ships on planet " << p->PlanetID() << " against enemy " << closest_enemy );
+        if ( ships_locked > 0 ) {
+            p->LockShips(ships_locked);
+            LOG( " " << "Locking " << ships_locked << " ships on planet " << p->PlanetID() << " (anti-rage)" );
+        }
     }
+}
+
+int AntiRageRequiredShips(PlanetWars &pw, int my_planet, int enemy_planet) {
+    int distance = Map::Distance(enemy_planet, my_planet);
+    int required_ships = pw.GetPlanet(enemy_planet)->Ships() - distance*Map::GrowthRate(my_planet);
+    if ( required_ships <= 0 ) return 0;
+
+    // enslist help
+    const std::vector<int>& sorted = Map::PlanetsByDistance( my_planet );
+    for ( int i=1; i<sorted.size(); ++i ) {
+        const PlanetPtr p = pw.GetPlanet(sorted[i]);
+        if ( p->Owner() != ME ) continue;
+
+        int help_distance =  Map::Distance(my_planet, sorted[i]);
+        if ( help_distance >= distance ) break;
+        required_ships -= p->Ships() + (distance-help_distance-1)*Map::GrowthRate(sorted[i]);
+    }
+
+    if ( required_ships <= 0 ) return 0;
+
+    return required_ships;
 }
 
 // Find planets closest to the opponent
 std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player) {
     std::map<int,bool> frontier_planets;
-    const std::vector<PlanetPtr> opponent_planets = pw.PlanetsOwnedBy(player == ME ? ENEMY : ME);
+    const std::vector<PlanetPtr> opponent_planets = pw.PlanetsOwnedBy(-player);
     for (int i = 0; i < opponent_planets.size(); ++i) {
         int p = opponent_planets[i]->PlanetID();
         int closest = ClosestPlanetByOwner(pw,p,player);
@@ -208,9 +295,8 @@ std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player) {
 // Find planets that will be closest to the opponent
 std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player) {
     std::map<int,bool> frontier_planets;
-    const int opponent = player == ME ? ENEMY : ME;
 
-    const std::vector<PlanetPtr> opponent_planets = pw.PlanetsOwnedBy(opponent);
+    const std::vector<PlanetPtr> opponent_planets = pw.PlanetsOwnedBy(-player);
 
     // determine future player planets
     for ( int i=0; i<opponent_planets.size(); ++i ) {
@@ -390,6 +476,10 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
             cost = prediction.ships;
 
             if ( future_owner ) {
+                // Uncomment to use effective growth rate
+                // PlanetState future_state = p->FutureState(future_days);
+                // cost = future_state.ships + ( distance - future_days ) * p->EffectiveGrowthRate(future_owner);
+
                 // TODO: determine the best factor for distance
                 score = ceil((double)cost/growth_rate/2.0) + distance*2;
                 // score = distance + distance/2;
@@ -441,7 +531,11 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
             required_ships = source_p->Ships();
         }
         else {
-            required_ships = cost - ( available_ships - source_p->Ships() );
+            required_ships = source_p->Ships() - ( available_ships - cost );
+
+            // if ( p->Owner() == ENEMY ) {
+            //     required_ships += ( available_ships - cost ) / 2;
+            // }
         }
 
         if ( required_ships < 0 ) {
@@ -452,7 +546,7 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
         orders.push_back( Order(source, p_id, required_ships, delay) ); 
 
         // take the score from the *closest* planet
-        if ( final_score == INF ) {
+        if ( final_score == INF ) { 
             final_score = score;
         }
     }
