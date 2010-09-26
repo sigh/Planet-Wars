@@ -7,6 +7,7 @@
 #include "DoTurn.h"
 
 void Defence(PlanetWars& pw);
+void Flee(PlanetWars& pw);
 int AntiRageRequiredShips(PlanetWars &pw, int my_planet, int enemy_planet);
 void Redistribution(PlanetWars& pw);
 void Harass(PlanetWars& pw, int planet, std::vector<Order>& orders);
@@ -128,7 +129,59 @@ void DoTurn(PlanetWars& pw, int turn) {
 
     Redistribution(pw);
 
+    LOG(" Flee phase");
+
+    // Flee(pw);
+
     LOG(" Finishing up");
+}
+
+bool SortByGrowthRate(PlanetPtr a, PlanetPtr b) {
+    return Map::GrowthRate(a->PlanetID()) < Map::GrowthRate(b->PlanetID()); 
+}
+
+void Flee(PlanetWars& pw) {
+    std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
+    sort(my_planets.begin(), my_planets.end(), SortByGrowthRate);
+
+    std::vector<PlanetPtr> planets = pw.Planets();
+
+    for ( int i=0; i<my_planets.size(); ++i ) {
+        PlanetPtr p = my_planets[i]; 
+        if ( p->FutureOwner() == ME ) continue;
+
+        int p_id = p->PlanetID();
+        int ships = p->FutureState(0).ships;
+
+        int closest_distance = INF;
+        int destination = -1;
+
+        // if the future owner is not me then see if we can use our ships elsewhere
+        for ( int j=0; j<planets.size(); ++j ) {
+            if ( j == p_id ) continue; 
+
+            PlanetPtr dest = planets[j];
+            if ( dest->Owner() == NEUTRAL ) continue;
+            if ( dest->FutureOwner() != ENEMY ) continue;
+
+            int distance = Map::Distance(p_id, j);
+            int cost = dest->Cost(distance);
+
+            LOG( "   Cost from " << p_id << " to " << j << ": " << cost );
+
+            if ( cost > ships ) continue;
+
+            if ( distance < closest_distance ) {
+                closest_distance = distance;
+                destination = j;
+            }
+        }
+
+        if ( destination >= 0 ) {
+            pw.IssueOrder(Order(p_id, destination, ships));
+            LOG( " Fleeing from " << p_id << " to " << destination );
+        }
+    }
 }
 
 // Lock the required number of ships onto planets that are under attack
@@ -478,7 +531,11 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
             required_ships = source_p->Ships();
         }
         else {
-            required_ships = cost - ( available_ships - source_p->Ships() );
+            required_ships = source_p->Ships() - ( available_ships - cost );
+
+            // if ( p->Owner() == ENEMY ) {
+            //     required_ships += ( available_ships - cost ) / 2;
+            // }
         }
 
         if ( required_ships < 0 ) {
