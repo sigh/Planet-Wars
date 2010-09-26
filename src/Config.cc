@@ -72,9 +72,8 @@ namespace Config {
 
     // setup config default
     void SetupDefaults() {
-        int_config_["foo"] = 1;
-        bool_config_["bar"] = false;
-        double_config_["baz"] = 1.2;
+        int_config_["antirage"] = 1;
+
         string_config_["config_file"] = "MyBot.conf";
         string_config_["log_file"] = "";
     }
