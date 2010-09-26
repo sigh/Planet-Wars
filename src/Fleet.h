@@ -32,22 +32,27 @@ struct Fleet {
 // my ships, enemy ships
 class FleetSummary {
     public:
-        int& operator [](int player) {
+        inline int& operator [](int player) {
            return player == ME ? me_ : enemy_; 
         }
 
-        int operator [](int player) const {
+        inline int operator [](int player) const {
            return player == ME ? me_ : enemy_; 
         }
 
         // difference in ships (favoring player)
-        int delta(int player=1) const {
+        inline int delta(int player=1) const {
             if ( player == ME ) {
                 return me_ - enemy_;
             }
             else {
                 return enemy_ - me_;
             }
+        }
+
+        // return true if there are no ships in the fleet summary
+        inline bool empty() const {
+            return enemy_ == 0 && me_ == 0;
         }
 
     private:
