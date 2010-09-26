@@ -56,6 +56,7 @@ class Planet {
     int WeightedIncoming() const;
 
     int RequiredShips() const;
+    int EffectiveGrowthRate(int owner) const;
 
  private:
     int planet_id_;

@@ -105,6 +105,28 @@ PlanetState Planet::FutureState(int days) const {
     }
 }
 
+int Planet::EffectiveGrowthRate(int owner) const {
+    int num_days = incoming_fleets_.size();
+    int x = 5;
+    if ( num_days <= x ) { 
+        return Map::GrowthRate(planet_id_);
+    }
+
+    int delta_ships = 0;
+    for ( int day=x+1; day < num_days; ++day ) {
+        delta_ships += incoming_fleets_[day].first - incoming_fleets_[day].second;
+    }
+    if ( owner == ENEMY ) {
+        delta_ships = -delta_ships;
+    }
+    if ( delta_ships < 0 ) { 
+        delta_ships = 0;
+    }
+    num_days -= x;
+
+    return delta_ships / num_days + Map::GrowthRate(planet_id_);
+}
+
 // TODO: Make this work for any player anytime
 // Currently assumes attacker is playr 1 and
 // Future owner is player 2
