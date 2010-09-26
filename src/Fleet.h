@@ -40,6 +40,16 @@ class FleetSummary {
            return player == ME ? me_ : enemy_; 
         }
 
+        // difference in ships (favoring player)
+        int delta(int player=1) const {
+            if ( player == ME ) {
+                return me_ - enemy_;
+            }
+            else {
+                return enemy_ - me_;
+            }
+        }
+
     private:
         int enemy_;
         int me_;

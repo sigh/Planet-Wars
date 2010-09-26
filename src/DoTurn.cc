@@ -228,7 +228,7 @@ int AntiRageRequiredShips(PlanetWars &pw, int my_planet, int enemy_planet) {
 // Find planets closest to the opponent
 std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player) {
     std::map<int,bool> frontier_planets;
-    const std::vector<PlanetPtr> opponent_planets = pw.PlanetsOwnedBy(player == ME ? ENEMY : ME);
+    const std::vector<PlanetPtr> opponent_planets = pw.PlanetsOwnedBy(-player);
     for (int i = 0; i < opponent_planets.size(); ++i) {
         int p = opponent_planets[i]->PlanetID();
         int closest = ClosestPlanetByOwner(pw,p,player);
@@ -242,9 +242,8 @@ std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player) {
 // Find planets that will be closest to the opponent
 std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player) {
     std::map<int,bool> frontier_planets;
-    const int opponent = player == ME ? ENEMY : ME;
 
-    const std::vector<PlanetPtr> opponent_planets = pw.PlanetsOwnedBy(opponent);
+    const std::vector<PlanetPtr> opponent_planets = pw.PlanetsOwnedBy(-player);
 
     // determine future player planets
     for ( int i=0; i<opponent_planets.size(); ++i ) {
@@ -490,7 +489,7 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
         orders.push_back( Order(source, p_id, required_ships, delay) ); 
 
         // take the score from the *closest* planet
-        if ( final_score == INF ) {
+        if ( final_score == INF ) { 
             final_score = score;
         }
     }
