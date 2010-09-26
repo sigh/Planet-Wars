@@ -7,6 +7,7 @@
 #include "DoTurn.h"
 
 void Defence(PlanetWars& pw);
+int AntiRageRequiredShips(PlanetWars &pw, int my_planet, int enemy_planet);
 void Redistribution(PlanetWars& pw);
 void Harass(PlanetWars& pw, int planet, std::vector<Order>& orders);
 int ClosestPlanetByOwner(const PlanetWars& pw, int planet, int player);
@@ -152,7 +153,16 @@ void Defence(PlanetWars& pw) {
         }
     }
 
-    // Anti-rage
+    // Anti rge level
+    // 0: None    |
+    // 1: closest | Increasing number of ships locked
+    // 2: max     |
+    // 3: sum     v
+    int anti_rage_level = Config::Value<int>("antirage");
+    if ( anti_rage_level == 0 ) {
+        // no rage protection
+        return;
+    }
 
     std::map<int,bool> frontier_planets = FrontierPlanets(pw, ME);
     std::map<int,bool>::iterator it;
@@ -161,34 +171,58 @@ void Defence(PlanetWars& pw) {
 
         int p_id = it->first;
         PlanetPtr p = pw.GetPlanet(p_id);
-        int closest_enemy = ClosestPlanetByOwner( pw, p_id, ENEMY );
 
-        // If there is no closest enemy then we don't need rage protection
-        if ( closest_enemy < 0 ) return;
+        int ships_locked;
 
-        PlanetPtr enemy = pw.GetPlanet(closest_enemy);
-        int distance = Map::Distance(closest_enemy, p_id);
-        int required_ships = enemy->Ships() - distance*Map::GrowthRate(p_id);
+        if ( anti_rage_level == 1 ) {
+            // defend against only the closest enemy
+            int closest_enemy = ClosestPlanetByOwner(pw, p_id, ENEMY);
+            if ( closest_enemy >= 0 ) {
+                ships_locked = AntiRageRequiredShips(pw, p_id, closest_enemy );
+            }
+        }
+        else {
+            // defend against all enemies
+            int max_required_ships = 0;
+            int sum_required_ships = 0;
+            std::vector<PlanetPtr> enemy_planets = pw.PlanetsOwnedBy(ENEMY);
+            for ( int i=0; i<enemy_planets.size(); ++i ) {
+                int required_ships = AntiRageRequiredShips(pw, p_id, enemy_planets[i]->PlanetID() );
+                if ( required_ships > max_required_ships ) {
+                    max_required_ships = required_ships;
+                }
+                sum_required_ships += required_ships;
+            }
 
-        // we don't need any help
-        if ( required_ships <= 0 ) continue;
-
-        // enslist help
-        const std::vector<int>& sorted = Map::PlanetsByDistance( p_id );
-        for ( int i=1; i<sorted.size(); ++i ) {
-            const PlanetPtr p = pw.GetPlanet(sorted[i]);
-            if ( p->Owner() != ME ) continue;
-
-            int help_distance =  Map::Distance(p_id, sorted[i]);
-            if ( help_distance >= distance ) break;
-            required_ships -= p->Ships() + (distance-help_distance-1)*Map::GrowthRate(sorted[i]);
+            ships_locked = anti_rage_level == 2 ? max_required_ships : sum_required_ships;
         }
 
-        if ( required_ships <= 0 ) continue;
-        p->LockShips(required_ships);
-
-        LOG( " " << "Locking " << required_ships << " ships on planet " << p->PlanetID() << " against enemy " << closest_enemy );
+        if ( ships_locked > 0 ) {
+            p->LockShips(ships_locked);
+            LOG( " " << "Locking " << ships_locked << " ships on planet " << p->PlanetID() << " (anti-rage)" );
+        }
     }
+}
+
+int AntiRageRequiredShips(PlanetWars &pw, int my_planet, int enemy_planet) {
+    int distance = Map::Distance(enemy_planet, my_planet);
+    int required_ships = pw.GetPlanet(enemy_planet)->Ships() - distance*Map::GrowthRate(my_planet);
+    if ( required_ships <= 0 ) return 0;
+
+    // enslist help
+    const std::vector<int>& sorted = Map::PlanetsByDistance( my_planet );
+    for ( int i=1; i<sorted.size(); ++i ) {
+        const PlanetPtr p = pw.GetPlanet(sorted[i]);
+        if ( p->Owner() != ME ) continue;
+
+        int help_distance =  Map::Distance(my_planet, sorted[i]);
+        if ( help_distance >= distance ) break;
+        required_ships -= p->Ships() + (distance-help_distance-1)*Map::GrowthRate(sorted[i]);
+    }
+
+    if ( required_ships <= 0 ) return 0;
+
+    return required_ships;
 }
 
 // Find planets closest to the opponent
