@@ -30,6 +30,19 @@ struct Fleet {
 };
 
 // my ships, enemy ships
-typedef std::pair<int, int> FleetSummary;
+class FleetSummary {
+    public:
+        int& operator [](int player) {
+           return player == ME ? me_ : enemy_; 
+        }
+
+        int operator [](int player) const {
+           return player == ME ? me_ : enemy_; 
+        }
+
+    private:
+        int enemy_;
+        int me_;
+};
 
 #endif
