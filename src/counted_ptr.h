@@ -15,8 +15,7 @@
 
 #define NO_MEMBER_TEMPLATES
 
-template <class X> class counted_ptr
-{
+template <class X> class counted_ptr {
 public:
     typedef X element_type;
 
