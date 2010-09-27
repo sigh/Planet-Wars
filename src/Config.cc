@@ -72,6 +72,7 @@ namespace Config {
     void SetupDefaults() {
         bool_config_["defence"] = 1;
         int_config_["antirage"] = 1;
+        bool_config_["antirage.exlusions"] = 1;
         bool_config_["attack"] = 1;
         bool_config_["redist"] = 1;
         bool_config_["flee"] = 0;

@@ -77,12 +77,14 @@ void Planet::AddIncomingFleet(const Fleet &f, int delay) {
     update_prediction_ = true;
 }
 
-void Planet::LockShips(int ships) {
+int Planet::LockShips(int ships) {
     locked_ships_ += ships;
     LOG( " Locked on " << planet_id_ << ": " << locked_ships_);
     if ( locked_ships_ > num_ships_ ) {
+        ships -= locked_ships_ - num_ships_;
         locked_ships_ = num_ships_;
     }
+    return ships;
 }
 
 // predicted owner after all fleets have arrived
