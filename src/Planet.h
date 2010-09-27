@@ -57,6 +57,7 @@ class Planet {
     int planet_id_;
     int owner_;
     int num_ships_;
+    int locked_ships_;
 
     std::vector<FleetSummary> incoming_fleets_;
     mutable std::vector<PlanetState> prediction_;
