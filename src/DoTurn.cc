@@ -8,6 +8,7 @@
 
 void Defence(PlanetWars& pw);
 void Flee(PlanetWars& pw);
+void AntiRage(PlanetWars& pw);
 int AntiRageRequiredShips(PlanetWars &pw, int my_planet, int enemy_planet);
 void Redistribution(PlanetWars& pw);
 void Harass(PlanetWars& pw, int planet, std::vector<Order>& orders);
@@ -26,9 +27,9 @@ void DoTurn(PlanetWars& pw, int turn) {
         return;
     }
 
-    LOG(" Defence phase");
-
     Defence(pw);
+
+    AntiRage(pw);
 
     LOG(" Expansion phase");
 
@@ -125,13 +126,9 @@ void DoTurn(PlanetWars& pw, int turn) {
         }
     }
 
-    LOG(" Redistribution phase");
-
     Redistribution(pw);
 
-    LOG(" Flee phase");
-
-    // Flee(pw);
+    Flee(pw);
 
     LOG(" Finishing up");
 }
@@ -141,6 +138,9 @@ bool SortByGrowthRate(PlanetPtr a, PlanetPtr b) {
 }
 
 void Flee(PlanetWars& pw) {
+    if ( ! Config::Value<bool>("flee") ) return;
+    LOG("Flee phase");
+
     std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
     sort(my_planets.begin(), my_planets.end(), SortByGrowthRate);
 
@@ -184,38 +184,15 @@ void Flee(PlanetWars& pw) {
     }
 }
 
-// Lock the required number of ships onto planets that are under attack
-void Defence(PlanetWars& pw) {
-    std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
-
-    for (int i = 0; i < my_planets.size(); ++i) {
-        PlanetPtr p = my_planets[i];
-
-        // TODO: IF this is an important planet then we must protect
-        // Else we can run away if AFTER all order have been issued we are still 
-        // under attack
-        
-        int required_ships = p->RequiredShips();
-
-        if ( required_ships > 0 ) { 
-            // TODO: This might be impacting the prediction so see if we can fix it
-            //       (Idea send a zero day fleet)
-            p->LockShips(required_ships);
-
-            LOG( " " << "Locking " << required_ships << " ships on planet " << p->PlanetID() );
-        }
-    }
-
+void AntiRage(PlanetWars& pw) {
     // Anti rge level
     // 0: None    |
     // 1: closest | Increasing number of ships locked
     // 2: max     |
     // 3: sum     v
     int anti_rage_level = Config::Value<int>("antirage");
-    if ( anti_rage_level == 0 ) {
-        // no rage protection
-        return;
-    }
+    if ( anti_rage_level == 0 ) return;
+    LOG("Antirage phase");
 
     std::map<int,bool> frontier_planets = FrontierPlanets(pw, ME);
     std::map<int,bool>::iterator it;
@@ -252,7 +229,33 @@ void Defence(PlanetWars& pw) {
 
         if ( ships_locked > 0 ) {
             p->LockShips(ships_locked);
-            LOG( " " << "Locking " << ships_locked << " ships on planet " << p->PlanetID() << " (anti-rage)" );
+            LOG( " Locking " << ships_locked << " ships on planet " << p->PlanetID() );
+        }
+    }
+}
+
+// Lock the required number of ships onto planets that are under attack
+void Defence(PlanetWars& pw) {
+    if ( ! Config::Value<bool>("defence") ) return;
+    LOG("Defence phase");
+
+    std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
+
+    for (int i = 0; i < my_planets.size(); ++i) {
+        PlanetPtr p = my_planets[i];
+
+        // TODO: IF this is an important planet then we must protect
+        // Else we can run away if AFTER all order have been issued we are still 
+        // under attack
+        
+        int required_ships = p->RequiredShips();
+
+        if ( required_ships > 0 ) { 
+            // TODO: This might be impacting the prediction so see if we can fix it
+            //       (Idea send a zero day fleet)
+            p->LockShips(required_ships);
+
+            LOG( " Locking " << required_ships << " ships on planet " << p->PlanetID() );
         }
     }
 }
@@ -317,6 +320,9 @@ std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player) {
 }
 
 void Redistribution(PlanetWars& pw) {
+    if ( ! Config::Value<bool>("redist") ) return;
+    LOG("Redistribution phase");
+
     std::map<int,bool> locked_planets = FrontierPlanets(pw, ME);
 
     // determine distances of own planets
