@@ -8,6 +8,7 @@
 
 void Defence(PlanetWars& pw);
 void Flee(PlanetWars& pw);
+void Attack(PlanetWars& pw);
 void AntiRage(PlanetWars& pw);
 int AntiRageRequiredShips(PlanetWars &pw, int my_planet, int enemy_planet);
 void Redistribution(PlanetWars& pw);
@@ -23,7 +24,7 @@ const int INF = 999999;
 void DoTurn(PlanetWars& pw, int turn) {
     int my_planet_count = pw.PlanetsOwnedBy(ME).size();
     if ( my_planet_count == 0 ) {
-        LOG(" We have no planets, we can make no actions");
+        LOG("We have no planets, we can make no actions");
         return;
     }
 
@@ -31,7 +32,18 @@ void DoTurn(PlanetWars& pw, int turn) {
 
     AntiRage(pw);
 
-    LOG(" Expansion phase");
+    Attack(pw);
+
+    Redistribution(pw);
+
+    Flee(pw);
+
+    LOG("Finishing up");
+}
+
+void Attack(PlanetWars& pw) {
+    if ( ! Config::Value<bool>("attack") ) return;
+    LOG("Attack phase");
 
     std::vector<PlanetPtr> planets = pw.Planets();
     std::vector< std::pair<int,int> > scores;
@@ -125,13 +137,8 @@ void DoTurn(PlanetWars& pw, int turn) {
             pw.IssueOrder(orders[j]);
         }
     }
-
-    Redistribution(pw);
-
-    Flee(pw);
-
-    LOG(" Finishing up");
 }
+
 
 bool SortByGrowthRate(PlanetPtr a, PlanetPtr b) {
     return Map::GrowthRate(a->PlanetID()) < Map::GrowthRate(b->PlanetID()); 
