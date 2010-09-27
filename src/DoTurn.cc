@@ -6,16 +6,18 @@
 #include "Log.h"
 #include "DoTurn.h"
 
+typedef std::map<int, std::pair<int,int> > DefenceExclusions;
+
 void Defence(PlanetWars& pw);
 void Flee(PlanetWars& pw);
-void Attack(PlanetWars& pw);
-void AntiRage(PlanetWars& pw);
+void Attack(PlanetWars& pw, DefenceExclusions& defence_exclusions);
+DefenceExclusions AntiRage(PlanetWars& pw);
 int AntiRageRequiredShips(PlanetWars &pw, int my_planet, int enemy_planet);
 void Redistribution(PlanetWars& pw);
 void Harass(PlanetWars& pw, int planet, std::vector<Order>& orders);
 int ClosestPlanetByOwner(const PlanetWars& pw, int planet, int player);
-std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p);
-std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<Order>& orders);
+std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions);
+std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Order>& orders);
 std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player);
 std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player);
 
@@ -30,9 +32,9 @@ void DoTurn(PlanetWars& pw, int turn) {
 
     Defence(pw);
 
-    AntiRage(pw);
+    DefenceExclusions defence_exclusions = AntiRage(pw);
 
-    Attack(pw);
+    Attack(pw, defence_exclusions);
 
     Redistribution(pw);
 
@@ -41,7 +43,7 @@ void DoTurn(PlanetWars& pw, int turn) {
     LOG("Finishing up");
 }
 
-void Attack(PlanetWars& pw) {
+void Attack(PlanetWars& pw, DefenceExclusions& defence_exclusions) {
     if ( ! Config::Value<bool>("attack") ) return;
     LOG("Attack phase");
 
@@ -89,7 +91,7 @@ void Attack(PlanetWars& pw) {
             continue;
         }
 
-        int score = CostAnalysis(pw,p).second;
+        int score = CostAnalysis(pw,p, defence_exclusions).second;
 
         scores.push_back( std::pair<int,int>(score, p_id) );
     }
@@ -108,7 +110,7 @@ void Attack(PlanetWars& pw) {
         // list of the orders that we will want to execute
         std::vector<Order> orders;
 
-        int cost = CostAnalysis(pw, p, orders).first;
+        int cost = CostAnalysis(pw, p, defence_exclusions, orders).first;
 
         if ( cost >= INF ) {
             // This case happens when cost > available_ships
@@ -191,18 +193,23 @@ void Flee(PlanetWars& pw) {
     }
 }
 
-void AntiRage(PlanetWars& pw) {
+DefenceExclusions AntiRage(PlanetWars& pw) {
+    DefenceExclusions defence_exclusions; 
+
     // Anti rge level
     // 0: None    |
     // 1: closest | Increasing number of ships locked
     // 2: max     |
     // 3: sum     v
     int anti_rage_level = Config::Value<int>("antirage");
-    if ( anti_rage_level == 0 ) return;
+    if ( anti_rage_level == 0 ) return defence_exclusions;
     LOG("Antirage phase");
+
+    bool have_defence_exclusions = Config::Value<bool>("antirage.exlusions");
 
     std::map<int,bool> frontier_planets = FrontierPlanets(pw, ME);
     std::map<int,bool>::iterator it;
+
     for ( it=frontier_planets.begin(); it != frontier_planets.end(); ++it ) {
         if ( ! it->second ) continue;
 
@@ -211,11 +218,15 @@ void AntiRage(PlanetWars& pw) {
 
         int ships_locked;
 
+        // the planet we are protecting ourselves from
+        int rage_planet = -1;
+
         if ( anti_rage_level == 1 ) {
             // defend against only the closest enemy
             int closest_enemy = ClosestPlanetByOwner(pw, p_id, ENEMY);
             if ( closest_enemy >= 0 ) {
                 ships_locked = AntiRageRequiredShips(pw, p_id, closest_enemy );
+                rage_planet = closest_enemy;
             }
         }
         else {
@@ -227,6 +238,7 @@ void AntiRage(PlanetWars& pw) {
                 int required_ships = AntiRageRequiredShips(pw, p_id, enemy_planets[i]->PlanetID() );
                 if ( required_ships > max_required_ships ) {
                     max_required_ships = required_ships;
+                    rage_planet = enemy_planets[i]->PlanetID();
                 }
                 sum_required_ships += required_ships;
             }
@@ -235,10 +247,15 @@ void AntiRage(PlanetWars& pw) {
         }
 
         if ( ships_locked > 0 ) {
-            p->LockShips(ships_locked);
+            ships_locked = p->LockShips(ships_locked);
+            if ( anti_rage_level != 3 && have_defence_exclusions ) {
+                defence_exclusions[p_id] = std::pair<int,int>(rage_planet, ships_locked);
+            }
             LOG( " Locking " << ships_locked << " ships on planet " << p->PlanetID() );
         }
     }
+
+    return defence_exclusions;
 }
 
 // Lock the required number of ships onto planets that are under attack
@@ -436,15 +453,15 @@ int ClosestPlanetByOwner(const PlanetWars& pw, int planet, int player) {
     return closest;
 }
 
-std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p) {
+std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions) {
     std::vector<Order> orders;
-    return CostAnalysis(pw, p, orders);
+    return CostAnalysis(pw, p, defence_exclusions, orders);
 }
 
 // Does a cost analysis for taking over planet p and populates orders with the orders required
 // to do so.
 // Returns (cost, score)
-std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<Order>& orders) {
+std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Order>& orders) {
     int p_id = p->PlanetID();
 
     // sort MY planets in order of distance the target planet
@@ -480,8 +497,17 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
     for ( int i=0; i<my_sorted.size() && cost > available_ships; ++i) {
         int source = my_sorted[i];
         const PlanetPtr source_p = pw.GetPlanet(source);
+        int source_ships = source_p->Ships();
+
+        // determine if we have any ship locking exclusion for this 
+        //   source/dest pair
+        DefenceExclusions::const_iterator d_it = defence_exclusions.find(source);
+        if ( d_it != defence_exclusions.end() && d_it->second.first == p_id ) {
+            LOG( " Lifting defence exclusion for " << d_it->second.second << " ships on planet " << source );
+            source_ships += d_it->second.second;
+        }
         
-        available_ships += source_p->Ships();
+        available_ships += source_ships;
 
         int distance = Map::Distance( p_id, source );
         delay = 0;
@@ -546,10 +572,10 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
 
         int required_ships = 0;
         if ( cost > available_ships ) {
-            required_ships = source_p->Ships();
+            required_ships = source_ships;
         }
         else {
-            required_ships = source_p->Ships() - ( available_ships - cost );
+            required_ships = source_ships - ( available_ships - cost );
 
             // if ( p->Owner() == ENEMY ) {
             //     required_ships += ( available_ships - cost ) / 2;
