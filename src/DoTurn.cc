@@ -473,6 +473,10 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
     int final_score = INF;
     int delay = 0;
 
+    double distance_scale = Config::Value<double>("cost.distance_scale");
+    double growth_scale   = Config::Value<double>("cost.growth_scale");
+    int    cost_offset       = Config::Value<int>("cost.offset");
+
     for ( int i=0; i<my_sorted.size() && cost > available_ships; ++i) {
         int source = my_sorted[i];
         const PlanetPtr source_p = pw.GetPlanet(source);
@@ -494,7 +498,7 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
                 // cost = future_state.ships + ( distance - future_days ) * p->EffectiveGrowthRate(future_owner);
 
                 // TODO: determine the best factor for distance
-                score = ceil((double)cost/growth_rate/2.0) + distance*2;
+                score = (int)((double)cost/growth_rate/growth_scale + distance*distance_scale);
                 // score = distance + distance/2;
             }
             else {
@@ -522,7 +526,7 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
                 int cost = p->Cost( arrive ); 
 
                 // int score = arrive + arrive/2;
-                int score = (int)ceil((double)cost/growth_rate/2.0) + arrive*2; 
+                int score = (int)((double)cost/growth_rate/growth_scale + arrive*distance_scale);
                 if ( score < best_score ) {
                     best_score = score;
                     delay = arrive - distance;
@@ -533,7 +537,8 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
             score = best_score;
             cost = best_cost;
         }
-        cost += 3;
+
+        cost += cost_offset;
         if ( cost < 0 ) {
             cost = 0;
         }

@@ -76,6 +76,10 @@ namespace Config {
         bool_config_["redist"] = 1;
         bool_config_["flee"] = 0;
 
+        double_config_["cost.distance_scale"] = 2.0;
+        double_config_["cost.growth_scale"] = 2.0;
+        int_config_["cost.offset"] = 3;
+
         string_config_["config_file"] = "MyBot.conf";
         string_config_["log_file"] = "";
     }
