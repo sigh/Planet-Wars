@@ -6,7 +6,7 @@
 
 Planet::Planet( int planet_id, int owner, int num_ships):
     planet_id_(planet_id), owner_(owner), num_ships_(num_ships),
-    update_prediction_(true),
+    update_prediction_(true), locked_ships_(0),
     incoming_fleets_(1,FleetSummary()) { } 
     
 int Planet::PlanetID() const {
@@ -18,7 +18,7 @@ int Planet::Owner() const {
 }
 
 int Planet::Ships() const {
-    return num_ships_;
+    return std::max(num_ships_ - locked_ships_,0);
 }
 
 int Planet::TotalShips(int player_id) const {
@@ -78,8 +78,11 @@ void Planet::AddIncomingFleet(const Fleet &f, int delay) {
 }
 
 void Planet::LockShips(int ships) {
-    ships = RemoveShips(ships);
-    incoming_fleets_[0][ME] += ships;
+    locked_ships_ += ships;
+    LOG( " Locked on " << planet_id_ << ": " << locked_ships_);
+    if ( locked_ships_ > num_ships_ ) {
+        locked_ships_ = num_ships_;
+    }
 }
 
 // predicted owner after all fleets have arrived
