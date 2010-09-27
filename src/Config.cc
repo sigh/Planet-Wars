@@ -60,8 +60,6 @@ template<typename T> class ConfigMap {
         std::map<std::string,T> config_;
 };
 
-#include <boost/program_options.hpp>
-
 namespace Config {
     ConfigMap<int> int_config_;
     ConfigMap<bool> bool_config_;
@@ -72,7 +70,11 @@ namespace Config {
 
     // setup config default
     void SetupDefaults() {
+        bool_config_["defence"] = 1;
         int_config_["antirage"] = 1;
+        bool_config_["attack"] = 1;
+        bool_config_["redist"] = 1;
+        bool_config_["flee"] = 0;
 
         string_config_["config_file"] = "MyBot.conf";
         string_config_["log_file"] = "";
