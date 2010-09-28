@@ -20,8 +20,12 @@ OPTIONS = {
 
 def run_game(bot_command):
     username = OPTIONS['name']+'-'+OPTIONS['version'];
+    password = []
+    if OPTIONS['password']:
+        password = ['-p', OPTIONS['password']]
+
     p = subprocess.Popen( 
-        ['tcp/tcp', OPTIONS['ip'], OPTIONS['port'], username, '-p', OPTIONS['password']] + bot_command, 
+        ['tcp/tcp', OPTIONS['ip'], OPTIONS['port'], username] + password + bot_command, 
         stdout=subprocess.PIPE, 
         stderr=subprocess.PIPE
     )
