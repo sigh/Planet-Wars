@@ -38,3 +38,5 @@ Planet selection: http://72.44.46.68/canvas?game_id=156244
     - Why didn't I take the 1-ship neutral
 Planet selection: http://72.44.46.68/canvas?game_id=156066
     - Analyse costs
+
+Allow us to attack the planets we are defending against - Try it with antirage = 2
