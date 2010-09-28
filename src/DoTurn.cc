@@ -365,7 +365,6 @@ void Redistribution(PlanetWars& pw) {
         int planet = planets[i]->PlanetID();
         int enemy = ClosestPlanetByOwner(pw, planet, ENEMY);
         distances[planet] = enemy >= 0 ? Map::Distance(planet, enemy) : 0;
-        LOG( " D " << planet << " => " << enemy << " : " << distances[planet] );
     }
 
     std::map<int,int> redist_map;
@@ -403,7 +402,6 @@ void Redistribution(PlanetWars& pw) {
 
         if (closest >= 0) {
             redist_map[p_id] = closest;
-            LOG( " > " << p_id << " => " << closest );
         }
     }
 
