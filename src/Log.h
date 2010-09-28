@@ -13,10 +13,10 @@ extern std::string PROG_NAME;
 #define LOG_ERROR_FILENAME "error.log"
 
 #define LOG_(s)         LOG_FILE << s
-#define LOG(s)          LOG_(s) << std::endl
-#define LOG_ERROR(s)    LOG_ERROR_FILE << PROG_NAME << ": " << s << std::endl; LOG( "ERROR: " << s)
-#define LOG_FLUSH()     LOG_FILE.flush(); LOG_ERROR_FILE.flush()
-#define LOG_CLOSE()     LOG_FILE.close(); LOG_ERROR_FILE.close()
+#define LOG(s)          LOG_(s) << "\n"
+#define LOG_ERROR(s)    { LOG_ERROR_FILE << PROG_NAME << ": " << s << std::endl; LOG( "ERROR: " << s); }
+#define LOG_FLUSH()     { LOG_FILE.flush(); LOG_ERROR_FILE.flush(); }
+#define LOG_CLOSE()     { LOG_FILE.close(); LOG_ERROR_FILE.close(); }
 
 inline void LOG_INIT(const char* prog_name, std::string log_filename) {
     // determine the name of the program
