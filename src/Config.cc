@@ -31,7 +31,7 @@ template<typename T> class ConfigMap : public ConfigMapBase {
 
         // return the vaue for the config item key
         //  or else throw an error
-        T find( const std::string& key ) {
+        T Value( const std::string& key ) {
             iterator found = config_.find(key);
             if ( found != config_.end() ) {
                 return found->second;
@@ -46,7 +46,7 @@ template<typename T> class ConfigMap : public ConfigMapBase {
         // return the value for the given key as a string
         std::string String( const std::string& key ) {
             std::stringstream s;
-            s << find(key);
+            s << Value(key);
             return s.str();
         }
 
@@ -122,10 +122,10 @@ namespace Config {
     }
 
     // Lookup values of each type
-    template<> int    Value<int>(const std::string& key) { return int_config_.find(key); }
-    template<> bool   Value<bool>(const std::string& key) { return bool_config_.find(key); }
-    template<> double Value<double>(const std::string& key) { return double_config_.find(key); }
-    template<> std::string Value<std::string>(const std::string& key) { return string_config_.find(key); }
+    template<> int    Value<int>(const std::string& key) { return int_config_.Value(key); }
+    template<> bool   Value<bool>(const std::string& key) { return bool_config_.Value(key); }
+    template<> double Value<double>(const std::string& key) { return double_config_.Value(key); }
+    template<> std::string Value<std::string>(const std::string& key) { return string_config_.Value(key); }
 
     // Convert the options to a string
     std::string String() {
