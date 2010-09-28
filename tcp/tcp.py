@@ -13,14 +13,13 @@ OPTIONS = {
     'name': 'sigh', 
     # This is not an important password
     'password': '1q2w3e4r5t6y7u8i9o0p',
-    'version': '',
-    'bot_file': './src/MyBot'
+    'version': ''
 }
 
-def run_game():
+def run_game(bot_command):
     username = OPTIONS['name']+'-'+OPTIONS['version'];
     p = subprocess.Popen( 
-        ['tcp/tcp', OPTIONS['ip'], OPTIONS['port'], username, '-p', OPTIONS['password'], OPTIONS['bot_file']], 
+        ['tcp/tcp', OPTIONS['ip'], OPTIONS['port'], username, '-p', OPTIONS['password']] + bot_command, 
         stdout=subprocess.PIPE, 
         stderr=subprocess.PIPE
     )
@@ -38,7 +37,7 @@ def run_game():
         '.log'
     )
     
-    shutil.copy(log_file(), 'tcp/log/' + log_name)
+    # shutil.copy(log_file(), 'tcp/log/' + log_name)
 
 def parse_output(stdout):
     """
@@ -91,6 +90,7 @@ def parse_args():
     opts, args = getopt.getopt(sys.argv[1:], "", [o+"=" for o in OPTIONS] + ['once'])
     for o, a in opts:
         OPTIONS[o[2:]] = a
+    return args
 
 stop = False
 def stop_handler(*args):
@@ -99,11 +99,11 @@ def stop_handler(*args):
     print "Stopping after the current game ends"
 
 if __name__ == "__main__":
-    parse_args()
+    args = parse_args()
 
     if 'once' in OPTIONS:
-        run_game()
+        run_game(bot_command)
     else:
         signal.signal(signal.SIGINT, stop_handler)
         while not stop:
-            run_game()
+            run_game(bot_command)

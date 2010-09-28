@@ -10,6 +10,8 @@ If we are completely protected by own planets then we can send out full growth r
 
 For attaking enemies, value close distance much more highly
 
+Weakness/desirablity of planets MUST depend on surrounding location!
+
 Rage protection
 
 Value neutrals in central position more highly
