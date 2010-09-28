@@ -11,7 +11,17 @@
 namespace po = boost::program_options;
 #endif // DEBUG
 
-template<typename T> class ConfigMap {
+class ConfigMapBase;
+typedef std::pair<std::string,ConfigMapBase*> ConfigItem;
+
+// This class allows us to store all config containers in the same place
+class ConfigMapBase {
+    public:
+        virtual std::string String(const std::string& key) = 0;
+        virtual void PopulateItems(std::vector<ConfigItem>& config_items) = 0;
+};
+
+template<typename T> class ConfigMap : public ConfigMapBase {
     public:
         typedef typename std::map<std::string,T>::iterator iterator;
 
@@ -33,14 +43,18 @@ template<typename T> class ConfigMap {
             throw error;
         }
 
-        // Print out all the config items
-        std::string String() {
+        // return the value for the given key as a string
+        std::string String( const std::string& key ) {
             std::stringstream s;
-            iterator it;
-            for ( it = config_.begin(); it != config_.end(); ++it ) {
-                s << it->first << "=" << it->second << std::endl;
-            }
+            s << find(key);
             return s.str();
+        }
+
+        void PopulateItems(std::vector<ConfigItem>& config_items) {
+            iterator it;
+            for ( it=config_.begin(); it != config_.end(); ++it ) {
+                config_items.push_back( ConfigItem(it->first, this) );
+            }
         }
 
         iterator begin() { return config_.begin(); }
@@ -65,6 +79,9 @@ namespace Config {
     ConfigMap<bool> bool_config_;
     ConfigMap<double> double_config_;
     ConfigMap<std::string> string_config_;
+    ConfigMapBase* config_maps[] = {
+        &int_config_, &bool_config_, &double_config_, &string_config_, NULL    
+    };
 
     void Parse(int argc, char*argv[]);
 
@@ -112,11 +129,22 @@ namespace Config {
 
     // Convert the options to a string
     std::string String() {
+        std::vector<ConfigItem> config_items;
+
+        // add all config items to a vector
+        for ( ConfigMapBase** current_map = config_maps; *current_map != NULL; ++current_map ) {
+            (*current_map)->PopulateItems(config_items);
+        }
+
+        // sort the vector
+        sort(config_items.begin(), config_items.end());
+
+        // output the config items in sorted order
+        std::vector<ConfigItem>::iterator it;
         std::stringstream s;
-        s   << double_config_.String()
-            << int_config_.String()
-            << bool_config_.String()
-            << string_config_.String();
+        for ( it=config_items.begin(); it != config_items.end(); ++it ) {
+            s << it->first << "=" << it->second->String(it->first) << "\n";
+        }
         return s.str();
     }
 
