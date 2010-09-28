@@ -347,9 +347,11 @@ void Redistribution(PlanetWars& pw) {
     if ( ! Config::Value<bool>("redist") ) return;
     LOG("Redistribution phase");
 
-    std::map<int,bool> locked_planets = FutureFrontierPlanets(pw, ME);
+    bool use_future = Config::Value<bool>("redist.future");
 
-    // determine distances of all planets
+    std::map<int,bool> locked_planets = use_future ? FutureFrontierPlanets(pw, ME) : FrontierPlanets(pw,ME);
+
+    // determine distances of all planets to closest ENEMY
     const std::vector<PlanetPtr> planets = pw.Planets();
     std::map<int,int> distances;
     for (int i = 0; i < planets.size(); ++i) {
@@ -382,7 +384,8 @@ void Redistribution(PlanetWars& pw) {
         int closest = -1;
         for ( int j=0; j<sorted.size(); ++j ) {
             int s_id = sorted[j];
-            if ( pw.GetPlanet(s_id)->FutureOwner() == ME && distances[s_id] < distance ) {
+            int s_owner = use_future ? pw.GetPlanet(s_id)->FutureOwner() : pw.GetPlanet(s_id)->Owner();
+            if ( s_owner == ME && distances[s_id] < distance ) {
                 closest = s_id;
                 // If we comment this out then we just throw all units at the planet
                 // closest to the enemy. This leaves our units quite vunerable

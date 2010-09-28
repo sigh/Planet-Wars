@@ -71,10 +71,11 @@ namespace Config {
     // setup config default
     void SetupDefaults() {
         bool_config_["defence"] = 1;
-        int_config_["antirage"] = 1;
+        int_config_["antirage"] = 2;
         bool_config_["antirage.exlusions"] = 1;
         bool_config_["attack"] = 1;
         bool_config_["redist"] = 1;
+        bool_config_["redist.future"] = 1;
         bool_config_["flee"] = 0;
 
         double_config_["cost.distance_scale"] = 2.0;
