@@ -6,6 +6,8 @@ import sys
 import getopt
 import shutil
 import re
+import os
+import os.path
 
 OPTIONS = {
     'ip': '72.44.46.68',
@@ -36,8 +38,13 @@ def run_game(bot_command):
         result.get('result','') +
         '.log'
     )
-    
-    # shutil.copy(log_file(), 'tcp/log/' + log_name)
+
+    dir = 'tcp/log/' + OPTIONS['version']
+
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
+    shutil.copy(log_file(bot_command), dir + '/' + log_name)
 
 def parse_output(stdout):
     """
@@ -83,8 +90,8 @@ def parse_output(stdout):
 
     return result
 
-def log_file():
-    return OPTIONS['bot_file'].split('/')[-1] + ".log"
+def log_file(bot_command):
+    return bot_command[0].split('/')[-1] + ".log"
 
 def parse_args():
     opts, args = getopt.getopt(sys.argv[1:], "", [o+"=" for o in OPTIONS] + ['once'])
@@ -99,7 +106,7 @@ def stop_handler(*args):
     print "Stopping after the current game ends"
 
 if __name__ == "__main__":
-    args = parse_args()
+    bot_command = parse_args()
 
     if 'once' in OPTIONS:
         run_game(bot_command)
