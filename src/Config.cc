@@ -84,6 +84,18 @@ namespace Config {
 
         string_config_["config_file"] = "MyBot.conf";
         string_config_["log_file"] = "";
+
+        // The following is just so the compile details will be logged
+
+        string_config_["compile.date"] = __DATE__;
+        string_config_["compile.time"] = __TIME__;
+
+        // so much trouble just to get the git revision in quotes o_O
+#ifdef GIT_REVISION
+#define STRINGIFY(a) #a
+#define STRINGIFY_MACRO(a) STRINGIFY(a)
+        string_config_["compile.revision"] = STRINGIFY_MACRO(GIT_REVISION);
+#endif
     }
 
     // init config
