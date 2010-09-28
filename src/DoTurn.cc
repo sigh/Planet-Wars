@@ -44,7 +44,9 @@ void DoTurn(PlanetWars& pw, int turn) {
 }
 
 void Attack(PlanetWars& pw, DefenceExclusions& defence_exclusions) {
-    if ( ! Config::Value<bool>("attack") ) return;
+    static bool attack = Config::Value<bool>("attack");
+    if ( ! attack  ) return;
+
     LOG("Attack phase");
 
     std::vector<PlanetPtr> planets = pw.Planets();
@@ -147,7 +149,9 @@ bool SortByGrowthRate(PlanetPtr a, PlanetPtr b) {
 }
 
 void Flee(PlanetWars& pw) {
-    if ( ! Config::Value<bool>("flee") ) return;
+    static bool flee = Config::Value<bool>("flee");
+    if ( ! flee  ) return;
+
     LOG("Flee phase");
 
     std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
@@ -201,11 +205,11 @@ DefenceExclusions AntiRage(PlanetWars& pw) {
     // 1: closest | Increasing number of ships locked
     // 2: max     |
     // 3: sum     v
-    int anti_rage_level = Config::Value<int>("antirage");
+    static int anti_rage_level = Config::Value<int>("antirage");
+    static bool have_defence_exclusions = Config::Value<bool>("antirage.exlusions");
     if ( anti_rage_level == 0 ) return defence_exclusions;
-    LOG("Antirage phase");
 
-    bool have_defence_exclusions = Config::Value<bool>("antirage.exlusions");
+    LOG("Antirage phase");
 
     std::map<int,bool> frontier_planets = FrontierPlanets(pw, ME);
     std::map<int,bool>::iterator it;
@@ -260,7 +264,9 @@ DefenceExclusions AntiRage(PlanetWars& pw) {
 
 // Lock the required number of ships onto planets that are under attack
 void Defence(PlanetWars& pw) {
-    if ( ! Config::Value<bool>("defence") ) return;
+    static bool defence = Config::Value<bool>("defence"); 
+    if ( ! defence ) return;
+
     LOG("Defence phase");
 
     std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
@@ -344,10 +350,11 @@ std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player) {
 }
 
 void Redistribution(PlanetWars& pw) {
-    if ( ! Config::Value<bool>("redist") ) return;
-    LOG("Redistribution phase");
+    static bool redist = Config::Value<bool>("redist");
+    static bool use_future = Config::Value<bool>("redist.future");
+    if ( !redist ) return;
 
-    bool use_future = Config::Value<bool>("redist.future");
+    LOG("Redistribution phase");
 
     std::map<int,bool> locked_planets = use_future ? FutureFrontierPlanets(pw, ME) : FrontierPlanets(pw,ME);
 
@@ -476,6 +483,10 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, const Defence
 // to do so.
 // Returns (cost, score)
 std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Order>& orders) {
+    static double distance_scale = Config::Value<double>("cost.distance_scale");
+    static double growth_scale   = Config::Value<double>("cost.growth_scale");
+    static int    cost_offset    = Config::Value<int>("cost.offset");
+
     int p_id = p->PlanetID();
 
     // sort MY planets in order of distance the target planet
@@ -503,10 +514,6 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, const Defence
     int score = INF;
     int final_score = INF;
     int delay = 0;
-
-    double distance_scale = Config::Value<double>("cost.distance_scale");
-    double growth_scale   = Config::Value<double>("cost.growth_scale");
-    int    cost_offset       = Config::Value<int>("cost.offset");
 
     for ( int i=0; i<my_sorted.size() && cost > available_ships; ++i) {
         int source = my_sorted[i];
