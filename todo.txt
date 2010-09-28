@@ -42,3 +42,11 @@ Planet selection: http://72.44.46.68/canvas?game_id=156066
     - Analyse costs
 
 Allow us to attack the planets we are defending against - Try it with antirage = 2
+
+http://72.44.46.68/canvas?game_id=205098
+    - Why are we not protecting home planet???
+
+tcp.py should download game and store it
+tcp.py should output directly to terminal too
+
+MUST protect key planets, center of formation. Planet scoring by position is urgent
