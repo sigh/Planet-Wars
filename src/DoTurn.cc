@@ -8,6 +8,8 @@
 
 void Defence(PlanetWars& pw);
 void Flee(PlanetWars& pw);
+void Attack(PlanetWars& pw);
+void AntiRage(PlanetWars& pw);
 int AntiRageRequiredShips(PlanetWars &pw, int my_planet, int enemy_planet);
 void Redistribution(PlanetWars& pw);
 void Harass(PlanetWars& pw, int planet, std::vector<Order>& orders);
@@ -22,15 +24,26 @@ const int INF = 999999;
 void DoTurn(PlanetWars& pw, int turn) {
     int my_planet_count = pw.PlanetsOwnedBy(ME).size();
     if ( my_planet_count == 0 ) {
-        LOG(" We have no planets, we can make no actions");
+        LOG("We have no planets, we can make no actions");
         return;
     }
 
-    LOG(" Defence phase");
-
     Defence(pw);
 
-    LOG(" Expansion phase");
+    AntiRage(pw);
+
+    Attack(pw);
+
+    Redistribution(pw);
+
+    Flee(pw);
+
+    LOG("Finishing up");
+}
+
+void Attack(PlanetWars& pw) {
+    if ( ! Config::Value<bool>("attack") ) return;
+    LOG("Attack phase");
 
     std::vector<PlanetPtr> planets = pw.Planets();
     std::vector< std::pair<int,int> > scores;
@@ -124,23 +137,17 @@ void DoTurn(PlanetWars& pw, int turn) {
             pw.IssueOrder(orders[j]);
         }
     }
-
-    LOG(" Redistribution phase");
-
-    Redistribution(pw);
-
-    LOG(" Flee phase");
-
-    // Flee(pw);
-
-    LOG(" Finishing up");
 }
+
 
 bool SortByGrowthRate(PlanetPtr a, PlanetPtr b) {
     return Map::GrowthRate(a->PlanetID()) < Map::GrowthRate(b->PlanetID()); 
 }
 
 void Flee(PlanetWars& pw) {
+    if ( ! Config::Value<bool>("flee") ) return;
+    LOG("Flee phase");
+
     std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
     sort(my_planets.begin(), my_planets.end(), SortByGrowthRate);
 
@@ -184,38 +191,15 @@ void Flee(PlanetWars& pw) {
     }
 }
 
-// Lock the required number of ships onto planets that are under attack
-void Defence(PlanetWars& pw) {
-    std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
-
-    for (int i = 0; i < my_planets.size(); ++i) {
-        PlanetPtr p = my_planets[i];
-
-        // TODO: IF this is an important planet then we must protect
-        // Else we can run away if AFTER all order have been issued we are still 
-        // under attack
-        
-        int required_ships = p->RequiredShips();
-
-        if ( required_ships > 0 ) { 
-            // TODO: This might be impacting the prediction so see if we can fix it
-            //       (Idea send a zero day fleet)
-            p->LockShips(required_ships);
-
-            LOG( " " << "Locking " << required_ships << " ships on planet " << p->PlanetID() );
-        }
-    }
-
+void AntiRage(PlanetWars& pw) {
     // Anti rge level
     // 0: None    |
     // 1: closest | Increasing number of ships locked
     // 2: max     |
     // 3: sum     v
     int anti_rage_level = Config::Value<int>("antirage");
-    if ( anti_rage_level == 0 ) {
-        // no rage protection
-        return;
-    }
+    if ( anti_rage_level == 0 ) return;
+    LOG("Antirage phase");
 
     std::map<int,bool> frontier_planets = FrontierPlanets(pw, ME);
     std::map<int,bool>::iterator it;
@@ -252,7 +236,33 @@ void Defence(PlanetWars& pw) {
 
         if ( ships_locked > 0 ) {
             p->LockShips(ships_locked);
-            LOG( " " << "Locking " << ships_locked << " ships on planet " << p->PlanetID() << " (anti-rage)" );
+            LOG( " Locking " << ships_locked << " ships on planet " << p->PlanetID() );
+        }
+    }
+}
+
+// Lock the required number of ships onto planets that are under attack
+void Defence(PlanetWars& pw) {
+    if ( ! Config::Value<bool>("defence") ) return;
+    LOG("Defence phase");
+
+    std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
+
+    for (int i = 0; i < my_planets.size(); ++i) {
+        PlanetPtr p = my_planets[i];
+
+        // TODO: IF this is an important planet then we must protect
+        // Else we can run away if AFTER all order have been issued we are still 
+        // under attack
+        
+        int required_ships = p->RequiredShips();
+
+        if ( required_ships > 0 ) { 
+            // TODO: This might be impacting the prediction so see if we can fix it
+            //       (Idea send a zero day fleet)
+            p->LockShips(required_ships);
+
+            LOG( " Locking " << required_ships << " ships on planet " << p->PlanetID() );
         }
     }
 }
@@ -317,6 +327,9 @@ std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player) {
 }
 
 void Redistribution(PlanetWars& pw) {
+    if ( ! Config::Value<bool>("redist") ) return;
+    LOG("Redistribution phase");
+
     std::map<int,bool> locked_planets = FrontierPlanets(pw, ME);
 
     // determine distances of own planets
@@ -460,6 +473,10 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
     int final_score = INF;
     int delay = 0;
 
+    double distance_scale = Config::Value<double>("cost.distance_scale");
+    double growth_scale   = Config::Value<double>("cost.growth_scale");
+    int    cost_offset       = Config::Value<int>("cost.offset");
+
     for ( int i=0; i<my_sorted.size() && cost > available_ships; ++i) {
         int source = my_sorted[i];
         const PlanetPtr source_p = pw.GetPlanet(source);
@@ -481,7 +498,7 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
                 // cost = future_state.ships + ( distance - future_days ) * p->EffectiveGrowthRate(future_owner);
 
                 // TODO: determine the best factor for distance
-                score = ceil((double)cost/growth_rate/2.0) + distance*2;
+                score = (int)((double)cost/growth_rate/growth_scale + distance*distance_scale);
                 // score = distance + distance/2;
             }
             else {
@@ -509,7 +526,7 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
                 int cost = p->Cost( arrive ); 
 
                 // int score = arrive + arrive/2;
-                int score = (int)ceil((double)cost/growth_rate/2.0) + arrive*2; 
+                int score = (int)((double)cost/growth_rate/growth_scale + arrive*distance_scale);
                 if ( score < best_score ) {
                     best_score = score;
                     delay = arrive - distance;
@@ -520,7 +537,8 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, std::vector<O
             score = best_score;
             cost = best_cost;
         }
-        cost += 3;
+
+        cost += cost_offset;
         if ( cost < 0 ) {
             cost = 0;
         }
