@@ -19,6 +19,9 @@ class ConfigMapBase {
     public:
         virtual std::string String(const std::string& key) = 0;
         virtual void PopulateItems(std::vector<ConfigItem>& config_items) = 0;
+#ifdef DEBUG
+        virtual void SetupOptions(po::options_description& options) = 0;
+#endif // DEBUG
 };
 
 template<typename T> class ConfigMap : public ConfigMapBase {
@@ -83,6 +86,12 @@ namespace Config {
         &int_config_, &bool_config_, &double_config_, &string_config_, NULL    
     };
 
+    // Lookup values of each type
+    template<> int    Value<int>(const std::string& key) { return int_config_.Value(key); }
+    template<> bool   Value<bool>(const std::string& key) { return bool_config_.Value(key); }
+    template<> double Value<double>(const std::string& key) { return double_config_.Value(key); }
+    template<> std::string Value<std::string>(const std::string& key) { return string_config_.Value(key); }
+
     void Parse(int argc, char*argv[]);
 
     // setup config default
@@ -121,12 +130,6 @@ namespace Config {
         Parse(argc, argv);
     }
 
-    // Lookup values of each type
-    template<> int    Value<int>(const std::string& key) { return int_config_.Value(key); }
-    template<> bool   Value<bool>(const std::string& key) { return bool_config_.Value(key); }
-    template<> double Value<double>(const std::string& key) { return double_config_.Value(key); }
-    template<> std::string Value<std::string>(const std::string& key) { return string_config_.Value(key); }
-
     // Convert the options to a string
     std::string String() {
         std::vector<ConfigItem> config_items;
@@ -153,10 +156,9 @@ namespace Config {
     void Parse(int argc, char*argv[]) {
         po::options_description options("Options");
 
-        int_config_.SetupOptions(options);
-        bool_config_.SetupOptions(options);
-        double_config_.SetupOptions(options);
-        string_config_.SetupOptions(options);
+        for ( ConfigMapBase** current_map = config_maps; *current_map != NULL; ++current_map ) {
+            (*current_map)->SetupOptions(options);
+        }
 
         // command line options
         po::variables_map vm;
