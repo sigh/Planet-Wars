@@ -347,23 +347,29 @@ void Redistribution(PlanetWars& pw) {
     if ( ! Config::Value<bool>("redist") ) return;
     LOG("Redistribution phase");
 
-    std::map<int,bool> locked_planets = FrontierPlanets(pw, ME);
+    std::map<int,bool> locked_planets = FutureFrontierPlanets(pw, ME);
 
-    // determine distances of own planets
-    const std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
+    // determine distances of all planets
+    const std::vector<PlanetPtr> planets = pw.Planets();
     std::map<int,int> distances;
-    for (int i = 0; i < my_planets.size(); ++i) {
-        int me = my_planets[i]->PlanetID();
-        int enemy = ClosestPlanetByOwner(pw, me, ENEMY);
-        distances[me] = enemy >= 0 ? Map::Distance(me, enemy) : 0;
+    for (int i = 0; i < planets.size(); ++i) {
+        int planet = planets[i]->PlanetID();
+        int enemy = ClosestPlanetByOwner(pw, planet, ENEMY);
+        distances[planet] = enemy >= 0 ? Map::Distance(planet, enemy) : 0;
+        LOG( " D " << planet << " => " << enemy << " : " << distances[planet] );
     }
 
     std::map<int,int> redist_map;
 
     // determine 1 step redistribution
-    for (int i = 0; i < my_planets.size(); ++i) {
-        PlanetPtr p = my_planets[i];
+    for (int i = 0; i < planets.size(); ++i) {
+        PlanetPtr p = planets[i];
         int p_id = p->PlanetID();
+
+        // We only want to redistribute from planets where we are the future owner :D
+        if ( p->FutureOwner() != ME ) {
+            continue;
+        }
 
         // Filter out planets we don't want to redistribute from
         if ( locked_planets[p_id] || p->Ships() <= 0 ) {
@@ -376,7 +382,7 @@ void Redistribution(PlanetWars& pw) {
         int closest = -1;
         for ( int j=0; j<sorted.size(); ++j ) {
             int s_id = sorted[j];
-            if ( pw.GetPlanet(s_id)->Owner() == ME && distances[s_id] < distance ) {
+            if ( pw.GetPlanet(s_id)->FutureOwner() == ME && distances[s_id] < distance ) {
                 closest = s_id;
                 // If we comment this out then we just throw all units at the planet
                 // closest to the enemy. This leaves our units quite vunerable
@@ -385,9 +391,9 @@ void Redistribution(PlanetWars& pw) {
             }
         }
 
-        // If we found a planet, then send half available ships there
         if (closest >= 0) {
             redist_map[p_id] = closest;
+            LOG( " > " << p_id << " => " << closest );
         }
     }
 
@@ -415,7 +421,12 @@ void Redistribution(PlanetWars& pw) {
 
     // Output the redistributions
     for ( it=redist_map.begin(); it != redist_map.end(); ++it ) { 
-        pw.IssueOrder(Order(it->first, it->second, pw.GetPlanet(it->first)->Ships()));
+        PlanetPtr p = pw.GetPlanet(it->first);
+
+        // Can't redisribute from unowned planets!
+        if ( p->Owner() != ME ) continue;
+
+        pw.IssueOrder(Order(it->first, it->second, p->Ships()));
         LOG( " Redistributing from " << it->first << " to " << it->second );
     }
 }
