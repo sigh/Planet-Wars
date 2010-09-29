@@ -50,3 +50,11 @@ tcp.py should download game and store it
 tcp.py should output directly to terminal too
 
 MUST protect key planets, center of formation. Planet scoring by position is urgent
+
+My bot is STUPID with neutrals:
+    http://72.44.46.68/canvas?game_id=205240
+    - Need better neutral protecion
+    - Distance to neutral should take into account planets that WILL BE OWNED:
+        - Choose max enemy distance
+        - Find all planets within distance
+        - Check owner in (distance) turns
