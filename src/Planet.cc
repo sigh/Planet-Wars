@@ -266,4 +266,25 @@ int Planet::RequiredShips() const {
     return required_ships;
 }
 
+int Planet::ShipExcess(int days) const {
+    int ships_delta = 0;
+    int required_ships = 0;
+    int growth_rate = Map::GrowthRate( planet_id_ );
+
+    int day = 1;
+    for ( ; day < incoming_fleets_.size() && day < days; ++day ) {
+        const FleetSummary &f = incoming_fleets_[day];
+        ships_delta += growth_rate + f.delta(ME);
+        if ( ships_delta < 0 ) {
+            required_ships += -ships_delta;
+            ships_delta = 0; 
+        }
+    }
+
+    for ( ; day < days; ++day ) {
+        ships_delta += growth_rate;
+    }
+
+    return ships_delta;
+}
 

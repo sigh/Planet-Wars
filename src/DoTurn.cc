@@ -125,7 +125,7 @@ void Attack(PlanetWars& pw, DefenceExclusions& defence_exclusions) {
             // Harass(pw, p_id, orders);
             break;
         }
-        
+
         // update delays so all fleet arrive at once
         // TODO: Try leaving this out (Might harm neutral attack/overtakes)
         const Order& last_order = orders.back();
@@ -140,6 +140,7 @@ void Attack(PlanetWars& pw, DefenceExclusions& defence_exclusions) {
         for ( int j=0; j<orders.size(); ++j ) {
             pw.IssueOrder(orders[j]);
         }
+        
     }
 }
 
@@ -303,7 +304,7 @@ int AntiRageRequiredShips(PlanetWars &pw, int my_planet, int enemy_planet) {
 
         int help_distance =  Map::Distance(my_planet, sorted[i]);
         if ( help_distance >= distance ) break;
-        required_ships -= p->Ships() + (distance-help_distance-1)*Map::GrowthRate(sorted[i]);
+        required_ships -= p->Ships() + p->ShipExcess(distance-help_distance-1);
     }
 
     if ( required_ships <= 0 ) return 0;
