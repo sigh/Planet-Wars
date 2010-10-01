@@ -21,6 +21,8 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, const Defence
 std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player);
 std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player);
 
+int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Order>& orders);
+
 const int INF = 999999;
 
 void DoTurn(PlanetWars& pw, int turn) {
@@ -482,10 +484,6 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, const Defence
 // to do so.
 // Returns (cost, score)
 std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Order>& orders) {
-    static double distance_scale = Config::Value<double>("cost.distance_scale");
-    static double growth_scale   = Config::Value<double>("cost.growth_scale");
-    static int    cost_offset    = Config::Value<int>("cost.offset");
-
     int p_id = p->PlanetID();
 
     // sort MY planets in order of distance the target planet
@@ -503,122 +501,134 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, const Defence
     if ( closest_enemy >= 0 ) {
         closest_enemy_distance = Map::Distance(closest_enemy, p_id);
     }
+    int future_owner = p->FutureOwner();
 
     // Determine best case 
-    int future_days = p->FutureDays();
-    int future_owner = p->FutureOwner();
-    int growth_rate = Map::GrowthRate(p_id);
     int available_ships = 0;
     int cost = INF;
     int score = INF;
-    int final_score = INF;
-    int delay = 0;
 
     for ( int i=0; i<my_sorted.size() && cost > available_ships; ++i) {
-        int source = my_sorted[i];
-        const PlanetPtr source_p = pw.GetPlanet(source);
-        int source_ships = source_p->Ships();
+        const PlanetPtr source = pw.GetPlanet(my_sorted[i]);
+
+        int source_id = source->PlanetID();
+        int source_ships = source->Ships();
+
+        if ( future_owner == NEUTRAL ) {
+            // Don't attack neutral planets closer to the enemy
+            if ( closest_enemy_distance < Map::Distance( source_id, p_id ) ) {
+                cost = INF;
+                break;
+            }
+        }
 
         // determine if we have any ship locking exclusion for this 
         //   source/dest pair
-        DefenceExclusions::const_iterator d_it = defence_exclusions.find(source);
+        DefenceExclusions::const_iterator d_it = defence_exclusions.find(source_id);
         if ( d_it != defence_exclusions.end() && d_it->second.first == p_id ) {
-            LOG( " Lifting defence exclusion for " << d_it->second.second << " ships on planet " << source );
+            LOG( " Lifting defence exclusion for " << d_it->second.second << " ships on planet " << source_id );
             source_ships += d_it->second.second;
         }
         
         available_ships += source_ships;
 
-        int distance = Map::Distance( p_id, source );
-        delay = 0;
-        cost = INF;
-
-        if ( distance > future_days ) {
-            // easy case: we arrive after all the other fleets
-            PlanetState prediction = p->FutureState( distance );
-            cost = prediction.ships;
-
-            if ( future_owner ) {
-                // Uncomment to use effective growth rate
-                // PlanetState future_state = p->FutureState(future_days);
-                // cost = future_state.ships + ( distance - future_days ) * p->EffectiveGrowthRate(future_owner);
-
-                // TODO: determine the best factor for distance
-                score = (int)((double)cost/growth_rate/growth_scale + distance*distance_scale);
-                // score = distance + distance/2;
-            }
-            else {
-                // Don't attack neutral planets closer to the enemy
-                if (distance >= closest_enemy_distance ) {
-                    return std::pair<int,int>(INF,INF);
-                }
-
-                // For a neutral planet:
-                //   the number of days to travel to the planet
-                //   + time to regain units spent
-                score = ceil((double)cost/growth_rate) + distance;
-            }
-        }
-        else {
-            // hard case: we can arrive before some other ships
-            // we know that this planet is (or will be) eventually be owned 
-            // by an enemy
-            int best_score = INF;
-            int best_cost = 0;
-
-            // determine the best day to arrive on, we search up to 12 day AFTER the last fleet arrives
-            for ( int arrive = future_days+1; arrive >= distance; --arrive ) {
-                // TODO: Another magic param 
-                int cost = p->Cost( arrive ); 
-
-                // int score = arrive + arrive/2;
-                int score = (int)((double)cost/growth_rate/growth_scale + arrive*distance_scale);
-                if ( score < best_score ) {
-                    best_score = score;
-                    delay = arrive - distance;
-                    best_cost = cost;
-                }
-            }
-
-            score = best_score;
-            cost = best_cost;
-        }
-
-        cost += cost_offset;
-        if ( cost < 0 ) {
-            cost = 0;
-        }
-        // cost -= delay * Map::GrowthRate(source);
-
-        int required_ships = 0;
-        if ( cost > available_ships ) {
-            required_ships = source_ships;
-        }
-        else {
-            required_ships = source_ships - ( available_ships - cost );
-
-            // if ( p->Owner() == ENEMY ) {
-            //     required_ships += ( available_ships - cost ) / 2;
-            // }
-        }
-
-        if ( required_ships < 0 ) {
-            // Fix the WTF
-            LOG_ERROR( "WTF: " << cost << " " << available_ships << " " << source_p->Ships() );
-        }
-
-        orders.push_back( Order(source, p_id, required_ships, delay) ); 
-
-        // take the score from the *closest* planet
-        if ( final_score == INF ) { 
-            final_score = score;
-        }
+        score = ScoreEdge(p, source, available_ships, source_ships, 0, cost, orders);
     }
 
-    LOG( "  score of planet " << p_id << " = " << score << " (" <<  cost << ") after " << delay << " days" );
-    if ( cost > available_ships ) {
-        cost = INF;
+
+    if ( orders.size() > 0 ) {
+        LOG( "  score of planet " << p_id << " = " << score << " (" <<  cost << ") after " << orders.back().delay << " days" );
+        if ( cost > available_ships ) {
+            cost = INF;
+        }
     }
 
     return std::pair<int,int>(cost,score);
+}
+
+// Score one source -> dest fleet
+int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Order>& orders) {
+    static double distance_scale = Config::Value<double>("cost.distance_scale");
+    static double growth_scale   = Config::Value<double>("cost.growth_scale");
+    static int    cost_offset    = Config::Value<int>("cost.offset");
+
+    int source_id = source->PlanetID();
+    int dest_id = dest->PlanetID();
+
+    int future_days = dest->FutureDays();
+    int future_owner = dest->FutureOwner();
+    int growth_rate = Map::GrowthRate(dest_id);
+
+    int distance = Map::Distance( dest_id, source_id );
+    cost = INF;
+    int score = INF;
+    int extra_delay = 0;
+
+    if ( delay + distance > future_days ) {
+        // easy case: we arrive after all the other fleets
+        PlanetState prediction = dest->FutureState( distance );
+        cost = prediction.ships;
+
+        if ( future_owner ) {
+            // Uncomment to use effective growth rate
+            // PlanetState future_state = p->FutureState(future_days);
+            // cost = future_state.ships + ( distance - future_days ) * p->EffectiveGrowthRate(future_owner);
+
+            // TODO: determine the best factor for distance
+            score = (int)((double)cost/growth_rate/growth_scale + delay + distance*distance_scale);
+            // score = distance + distance/2;
+        }
+        else {
+            // For a neutral planet:
+            //   the number of days to travel to the planet
+            //   + time to regain units spent
+            score = ceil((double)cost/growth_rate) + distance + delay;
+        }
+    }
+    else {
+        // hard case: we can arrive before some other ships
+        // we know that this planet is (or will be) eventually be owned 
+        // by an enemy
+        int best_score = INF;
+        int best_cost = 0;
+
+        // determine the best day to arrive on, we search up to 12 day AFTER the last fleet arrives
+        for ( int arrive = future_days+1; arrive >= distance + delay; --arrive ) {
+            // TODO: Another magic param 
+            int cost = dest->Cost( arrive ); 
+
+            // int score = arrive + arrive/2;
+            int score = (int)((double)cost/growth_rate/growth_scale + arrive*distance_scale);
+            if ( score < best_score ) {
+                best_score = score;
+                extra_delay = arrive - distance;
+                best_cost = cost;
+            }
+        }
+
+        score = best_score;
+        cost = best_cost;
+    }
+
+    cost += cost_offset;
+    if ( cost < 0 ) {
+        cost = 0;
+    }
+
+    int required_ships = 0;
+    if ( cost > available_ships ) {
+        required_ships = source_ships;
+    }
+    else {
+        required_ships = source_ships - ( available_ships - cost );
+    }
+
+    if ( required_ships <= 0 ) {
+        // Fix the WTF
+        LOG_ERROR( "WTF: " << cost << " " << available_ships << " " << source->Ships() );
+    }
+
+    orders.push_back( Order(source_id, dest_id, required_ships, extra_delay) ); 
+
+    return score;
 }
