@@ -517,7 +517,10 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, const Defence
         if ( future_owner == NEUTRAL ) {
             // Don't attack neutral planets closer to the enemy
             if ( closest_enemy_distance < Map::Distance( source_id, p_id ) ) {
+                // We do not want this move to be considered AT ALL
+                // So give it the highest score
                 cost = INF;
+                score = INF;
                 break;
             }
         }
@@ -566,7 +569,7 @@ int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_
 
     if ( delay + distance > future_days ) {
         // easy case: we arrive after all the other fleets
-        PlanetState prediction = dest->FutureState( distance );
+        PlanetState prediction = dest->FutureState( distance + delay );
         cost = prediction.ships;
 
         if ( future_owner ) {
@@ -601,7 +604,7 @@ int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_
             int score = (int)((double)cost/growth_rate/growth_scale + arrive*distance_scale);
             if ( score < best_score ) {
                 best_score = score;
-                extra_delay = arrive - distance;
+                extra_delay = arrive - distance - delay;
                 best_cost = cost;
             }
         }
@@ -625,10 +628,10 @@ int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_
 
     if ( required_ships <= 0 ) {
         // Fix the WTF
-        LOG_ERROR( "WTF: " << cost << " " << available_ships << " " << source->Ships() );
+        LOG_ERROR( "WTF: " << cost << " " << available_ships << " " << source_ships );
     }
 
-    orders.push_back( Order(source_id, dest_id, required_ships, extra_delay) ); 
+    orders.push_back( Order(source_id, dest_id, required_ships, delay + extra_delay) ); 
 
     return score;
 }
