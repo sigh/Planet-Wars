@@ -570,6 +570,7 @@ int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defe
 int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Order>& orders) {
     static double distance_scale = Config::Value<double>("cost.distance_scale");
     static double growth_scale   = Config::Value<double>("cost.growth_scale");
+    static double delay_scale    = Config::Value<double>("cost.delay_scale");
     static int    cost_offset    = Config::Value<int>("cost.offset");
 
     int source_id = source->PlanetID();
@@ -595,14 +596,14 @@ int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_
             // cost = future_state.ships + ( distance - future_days ) * p->EffectiveGrowthRate(future_owner);
 
             // TODO: determine the best factor for distance
-            score = (int)((double)cost/growth_rate/growth_scale + delay + distance*distance_scale);
+            score = (int)((double)cost/growth_rate/growth_scale + delay/delay_scale + distance*distance_scale);
             // score = distance + distance/2;
         }
         else {
             // For a neutral planet:
             //   the number of days to travel to the planet
             //   + time to regain units spent
-            score = ceil((double)cost/growth_rate) + distance + delay;
+            score = ceil((double)cost/growth_rate) + delay/delay_scale + distance;
         }
     }
     else {
@@ -618,7 +619,7 @@ int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_
             int cost = dest->Cost( arrive ); 
 
             // int score = arrive + arrive/2;
-            int score = (int)((double)cost/growth_rate/growth_scale + arrive*distance_scale);
+            int score = (int)((double)cost/growth_rate/growth_scale + delay/delay_scale + (arrive-delay)*distance_scale);
             if ( score < best_score ) {
                 best_score = score;
                 extra_delay = arrive - distance - delay;
