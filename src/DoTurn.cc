@@ -23,8 +23,6 @@ std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player);
 
 int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Order>& orders);
 
-const int INF = 999999;
-
 void DoTurn(PlanetWars& pw, int turn) {
     int my_planet_count = pw.PlanetsOwnedBy(ME).size();
     if ( my_planet_count == 0 ) {
@@ -483,6 +481,7 @@ int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defe
 // to do so.
 // Returns score
 int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Order>& orders) {
+    static int max_delay = Config::Value<int>("attack.max_delay");
     int p_id = p->PlanetID();
 
     // sort MY planets in order of distance the target planet
@@ -503,56 +502,68 @@ int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defe
     int future_owner = p->FutureOwner();
 
     // Determine best case 
-    int available_ships = 0;
-    int cost = INF;
-    int score = INF;
+    int best_score = INF;
+    int best_cost = INF;
+    std::vector<Order> best_orders;
 
-    for ( int i=0; i<my_sorted.size() && cost > available_ships; ++i) {
-        const PlanetPtr source = pw.GetPlanet(my_sorted[i]);
+    for ( int delay=0; delay <= max_delay; ++delay ) {
+        int score = INF;
+        int cost = INF;
+        std::vector<Order> current_orders;
 
-        int source_id = source->PlanetID();
-        int source_ships = source->Ships();
+        int available_ships = 0;
+        for ( int i=0; i<my_sorted.size() && cost > available_ships; ++i) {
+            const PlanetPtr source = pw.GetPlanet(my_sorted[i]);
 
-        if ( future_owner == NEUTRAL ) {
-            // Don't attack neutral planets closer to the enemy
-            int distance = Map::Distance( source_id, p_id );
-            // if ( closest_enemy_distance <= distance && p->FutureDays() < distance ) {
-            if ( closest_enemy_distance <= distance ) {
-                // We do not want this move to be considered AT ALL
-                // So give it the highest score
-                cost = INF;
-                score = INF;
-                break;
+            int source_id = source->PlanetID();
+            int source_ships = source->Ships();
+
+            if ( future_owner == NEUTRAL ) {
+                // Don't attack neutral planets closer to the enemy
+                int distance = Map::Distance( source_id, p_id );
+                // if ( closest_enemy_distance <= distance && p->FutureDays() < distance ) {
+                if ( closest_enemy_distance <= distance ) {
+                    // We do not want this move to be considered AT ALL
+                    // So give it the highest score
+                    cost = INF;
+                    score = INF;
+                    break;
+                }
             }
+
+            // determine if we have any ship locking exclusion for this 
+            //   source/dest pair
+            DefenceExclusions::const_iterator d_it = defence_exclusions.find(source_id);
+            if ( d_it != defence_exclusions.end() && d_it->second.first == p_id ) {
+                LOG( " Lifting defence exclusion for " << d_it->second.second << " ships on planet " << source_id );
+                source_ships += d_it->second.second;
+                available_ships += delay*Map::GrowthRate(source_id);
+            }
+            
+            available_ships += source_ships;
+
+            score = ScoreEdge(p, source, available_ships, source_ships, delay, cost, current_orders);
         }
 
-        // determine if we have any ship locking exclusion for this 
-        //   source/dest pair
-        DefenceExclusions::const_iterator d_it = defence_exclusions.find(source_id);
-        if ( d_it != defence_exclusions.end() && d_it->second.first == p_id ) {
-            LOG( " Lifting defence exclusion for " << d_it->second.second << " ships on planet " << source_id );
-            source_ships += d_it->second.second;
+        // If the cost is too large then we can generate no orders
+        if ( cost > available_ships ) {
+            current_orders.clear();
         }
-        
-        available_ships += source_ships;
 
-        score = ScoreEdge(p, source, available_ships, source_ships, 0, cost, orders);
+        if ( score < best_score ) {
+            best_score = score;
+            best_cost = cost;
+            best_orders = current_orders;
+        }
     }
 
+    orders.insert(orders.end(), best_orders.begin(), best_orders.end());
 
     if ( orders.size() > 0 ) {
-        LOG( "  score of planet " << p_id << " = " << score << " (" <<  cost << ") after " << orders.back().delay << " days" );
-        if ( cost > available_ships ) {
-            cost = INF;
-        }
+        LOG( "  score of planet " << p_id << " = " << best_score << " (" <<  best_cost << ") after " << orders.back().delay << " days" );
     }
 
-    // Callers detect inifite cost by empty order list
-    if ( cost >= INF ) {
-        orders.clear();
-    }
-
-    return score;
+    return best_score;
 }
 
 // Score one source -> dest fleet
