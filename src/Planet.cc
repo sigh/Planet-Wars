@@ -41,9 +41,12 @@ int Planet::IncomingShips(int player_id) const {
     return num_ships;
 }
 
-int Planet::WeightedIncoming() const {
+int Planet::WeightedIncoming(int days) const {
     int ships = 0;
-    for ( int i=0; i < incoming_fleets_.size(); ++i ) {
+    if ( days > incoming_fleets_.size() ) {
+        days = incoming_fleets_.size();
+    }
+    for ( int i=0; i < days; ++i ) {
         ships += incoming_fleets_[i].delta(ME);
     }
     return ships;

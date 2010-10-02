@@ -4,6 +4,8 @@
 #include "Fleet.h"
 #include "counted_ptr.h"
 
+const int INF = 999999;
+
 class Planet;
 typedef counted_ptr<Planet> PlanetPtr;
 
@@ -50,7 +52,7 @@ class Planet {
     int FutureOwner() const;
     int Cost( int days ) const;
     int FutureDays() const;
-    int WeightedIncoming() const;
+    int WeightedIncoming(int days=INF) const;
 
     int RequiredShips() const;
     int ShipExcess(int days) const;
