@@ -3,29 +3,28 @@
 
 #include "Map.h"
 
-struct Order {
-    public:
-        int source;
-        int dest;
-        int ships;
-        int delay;
-        Order(int source, int dest, int ships, int delay=0)
-            : source(source), dest(dest), ships(ships), delay(delay) {
-                // TODO: Warn and log error about empty order
-       }
-};
-
 struct Fleet {
     public:
-        int owner;
-        int dest;
-        int ships;
-        int remaining;
-        Fleet() {};
-        Fleet(int owner, const Order &o) : owner(owner) {
-            dest = o.dest;
-            ships = o.ships;
-            remaining = Map::Distance( o.source, o.dest );
+        int owner;      // player id of owner
+        int source;     // planet id of source
+        int dest;       // planet id of destination
+        int ships;      // number of ships in fleet
+        int launch;     // number of days until launch (negative if fleet is already in flight)
+
+        Fleet(int owner, int source, int dest, int ships, int launch=0)
+            : owner(owner), source(source), dest(dest), ships(ships), launch(launch) {
+                // TODO: Warn and log error about empty order
+        }
+    
+        // creating a fleet for issuing an order
+        Fleet(int source, int dest, int ships, int launch=0)
+            : owner(ME), source(source), dest(dest), ships(ships), launch(launch) {
+                // TODO: Warn and log error about empty order
+        }
+
+        // number of days until fleet arrives
+        inline int remaining() const { 
+            return Map::Distance(source, dest) + launch;
         }
 };
 

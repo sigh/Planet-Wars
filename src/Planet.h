@@ -44,7 +44,7 @@ class Planet {
     // owned by given player
     int TotalShips(int player_id) const;
 
-    void AddIncomingFleet( const Fleet& f, int delay=0);
+    void AddIncomingFleet(const Fleet& f);
 
     // lock ships onto planet and return the number of ships lockd
     int LockShips( int ships );

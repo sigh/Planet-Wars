@@ -60,20 +60,20 @@ int PlanetWars::Ships(int player_id) const {
     return ships;
 }
 
-std::vector<Order> PlanetWars::Orders() const {
+std::vector<Fleet> PlanetWars::Orders() const {
     return orders_;
 }
 
-void PlanetWars::IssueOrder(const Order& order) {
+void PlanetWars::IssueOrder(const Fleet& order) {
     planets_[order.source]->RemoveShips( order.ships );
-    planets_[order.dest]->AddIncomingFleet( Fleet( ME, order ), order.delay );
+    planets_[order.dest]->AddIncomingFleet( order );
 
-    // only execute order if it is for now
-    if ( order.delay == 0 ) {
+    // only store order if it is for now
+    if ( order.launch == 0 ) {
         orders_.push_back(order);
     }
     else {
-        LOG( "  DELAYED ORDER: " << order.source << " " << order.dest << " " << order.ships << " | " << order.delay );
+        LOG( "  DELAYED ORDER: " << order.source << " " << order.dest << " " << order.ships << " | " << order.launch );
     }
 }
 
