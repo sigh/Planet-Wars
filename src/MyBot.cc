@@ -117,13 +117,16 @@ PlanetWars ParseGameState(const std::string& game_state) {
         }
     }
 
+    // TODO: make this less coypying around
+    PlanetWars pw(planets);
+
     // inform planets about fleets
     for (int i = 0; i < fleets.size(); ++i) {
         const Fleet& f = fleets[i];
-        planets[ f.dest ]->AddIncomingFleet(f);
+        pw.AddFleet(f);
     }
 
-    return PlanetWars( planets );
+    return pw;
 }
 
 void ParseMap(const std::string& game_state) {
