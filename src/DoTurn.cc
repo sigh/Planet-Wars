@@ -516,7 +516,9 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, const Defence
 
         if ( future_owner == NEUTRAL ) {
             // Don't attack neutral planets closer to the enemy
-            if ( closest_enemy_distance < Map::Distance( source_id, p_id ) ) {
+            int distance = Map::Distance( source_id, p_id );
+            // if ( closest_enemy_distance <= distance && p->FutureDays() < distance ) {
+            if ( closest_enemy_distance <= distance ) {
                 // We do not want this move to be considered AT ALL
                 // So give it the highest score
                 cost = INF;
