@@ -16,8 +16,8 @@ int AntiRageRequiredShips(PlanetWars &pw, int my_planet, int enemy_planet);
 void Redistribution(PlanetWars& pw);
 void Harass(PlanetWars& pw, int planet, std::vector<Order>& orders);
 int ClosestPlanetByOwner(const PlanetWars& pw, int planet, int player);
-std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions);
-std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Order>& orders);
+int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions);
+int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Order>& orders);
 std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player);
 std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player);
 
@@ -95,8 +95,7 @@ void Attack(PlanetWars& pw, DefenceExclusions& defence_exclusions) {
             continue;
         }
 
-        int score = CostAnalysis(pw,p, defence_exclusions).second;
-
+        int score = ScorePlanet(pw,p, defence_exclusions);
         scores.push_back( std::pair<int,int>(score, p_id) );
     }
 
@@ -114,9 +113,9 @@ void Attack(PlanetWars& pw, DefenceExclusions& defence_exclusions) {
         // list of the orders that we will want to execute
         std::vector<Order> orders;
 
-        int cost = CostAnalysis(pw, p, defence_exclusions, orders).first;
+        ScorePlanet(pw, p, defence_exclusions, orders);
 
-        if ( cost >= INF ) {
+        if ( orders.empty() ) {
             // This case happens when cost > available_ships
 
             // If we don't have enough ships to capture the next best planet then WAIT
@@ -475,15 +474,15 @@ int ClosestPlanetByOwner(const PlanetWars& pw, int planet, int player) {
     return closest;
 }
 
-std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions) {
+int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions) {
     std::vector<Order> orders;
-    return CostAnalysis(pw, p, defence_exclusions, orders);
+    return ScorePlanet(pw, p, defence_exclusions, orders);
 }
 
 // Does a cost analysis for taking over planet p and populates orders with the orders required
 // to do so.
-// Returns (cost, score)
-std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Order>& orders) {
+// Returns score
+int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Order>& orders) {
     int p_id = p->PlanetID();
 
     // sort MY planets in order of distance the target planet
@@ -548,7 +547,12 @@ std::pair<int,int> CostAnalysis(const PlanetWars& pw, PlanetPtr p, const Defence
         }
     }
 
-    return std::pair<int,int>(cost,score);
+    // Callers detect inifite cost by empty order list
+    if ( cost >= INF ) {
+        orders.clear();
+    }
+
+    return score;
 }
 
 // Score one source -> dest fleet
