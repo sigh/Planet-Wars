@@ -100,7 +100,7 @@ namespace Config {
         int_config_["antirage"] = 2;
         bool_config_["antirage.exlusions"] = 1;
         bool_config_["attack"] = 1;
-        int_config_["attack.max_delay"] = 20;
+        int_config_["attack.max_delay"] = 0;
         bool_config_["redist"] = 1;
         bool_config_["redist.future"] = 1;
         bool_config_["flee"] = 0;
