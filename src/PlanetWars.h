@@ -30,14 +30,14 @@ class PlanetWars {
         std::vector<PlanetPtr> PlanetsNotOwnedBy(int player) const;
 
         // Return a list of the currently pending orders 
-        std::vector<Order> Orders() const;
+        std::vector<Fleet> Orders() const;
 
         // Sends an order to the game engine. The order is to send num_ships ships
         // from source_planet to destination_planet. The order must be valid, or
         // else your bot will get kicked and lose the game. For example, you must own
         // source_planet, and you can't send more ships than you actually have on
         // that planet.
-        void IssueOrder(const Order& order);
+        void IssueOrder(const Fleet& order);
 
         // Returns the number of ships that the given player has, either located
         // on planets or in flight.
@@ -50,7 +50,7 @@ class PlanetWars {
         // Store all the planets and fleets. OMG we wouldn't wanna lose all the
         // planets and fleets, would we!?
         std::vector<PlanetPtr> planets_;
-        std::vector<Order> orders_;
+        std::vector<Fleet> orders_;
 };
 
 #endif

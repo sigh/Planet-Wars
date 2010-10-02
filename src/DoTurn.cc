@@ -14,14 +14,14 @@ void Attack(PlanetWars& pw, DefenceExclusions& defence_exclusions);
 DefenceExclusions AntiRage(PlanetWars& pw);
 int AntiRageRequiredShips(PlanetWars &pw, int my_planet, int enemy_planet);
 void Redistribution(PlanetWars& pw);
-void Harass(PlanetWars& pw, int planet, std::vector<Order>& orders);
+void Harass(PlanetWars& pw, int planet, std::vector<Fleet>& orders);
 int ClosestPlanetByOwner(const PlanetWars& pw, int planet, int player);
 int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions);
-int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Order>& orders);
+int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Fleet>& orders);
 std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player);
 std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player);
 
-int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Order>& orders);
+int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Fleet>& orders);
 
 void DoTurn(PlanetWars& pw, int turn) {
     int my_planet_count = pw.PlanetsOwnedBy(ME).size();
@@ -109,7 +109,7 @@ void Attack(PlanetWars& pw, DefenceExclusions& defence_exclusions) {
         PlanetPtr p = pw.GetPlanet(p_id);
 
         // list of the orders that we will want to execute
-        std::vector<Order> orders;
+        std::vector<Fleet> orders;
 
         ScorePlanet(pw, p, defence_exclusions, orders);
 
@@ -127,11 +127,11 @@ void Attack(PlanetWars& pw, DefenceExclusions& defence_exclusions) {
 
         // update delays so all fleet arrive at once
         // TODO: Try leaving this out (Might harm neutral attack/overtakes)
-        const Order& last_order = orders.back();
-        int last_arrival = last_order.delay + Map::Distance( last_order.source, last_order.dest );
+        const Fleet& last_order = orders.back();
+        int last_arrival = last_order.launch + Map::Distance( last_order.source, last_order.dest );
         for ( int j=0; j<orders.size()-1; ++j ) {
-            Order& order = orders[j];
-            order.delay = last_arrival - Map::Distance( order.source, order.dest );
+            Fleet& order = orders[j];
+            order.launch = last_arrival - Map::Distance( order.source, order.dest );
         }
 
 
@@ -191,7 +191,7 @@ void Flee(PlanetWars& pw) {
         }
 
         if ( destination >= 0 ) {
-            pw.IssueOrder(Order(p_id, destination, ships));
+            pw.IssueOrder(Fleet(p_id, destination, ships));
             LOG( " Fleeing from " << p_id << " to " << destination );
         }
     }
@@ -434,14 +434,14 @@ void Redistribution(PlanetWars& pw) {
         // Can't redisribute from unowned planets!
         if ( p->Owner() != ME ) continue;
 
-        pw.IssueOrder(Order(it->first, it->second, p->Ships()));
+        pw.IssueOrder(Fleet(it->first, it->second, p->Ships()));
         LOG( " Redistributing from " << it->first << " to " << it->second );
     }
 }
 
-void Harass(PlanetWars& pw, int planet, std::vector<Order>& orders) {
+void Harass(PlanetWars& pw, int planet, std::vector<Fleet>& orders) {
     if ( orders.size() < 1 ) return;
-    Order& order = orders[0];
+    Fleet& order = orders[0];
 
     // ensure that the destination is owned by the enemy
     if ( pw.GetPlanet(order.dest)->Owner() != ENEMY ) return;
@@ -473,14 +473,14 @@ int ClosestPlanetByOwner(const PlanetWars& pw, int planet, int player) {
 }
 
 int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions) {
-    std::vector<Order> orders;
+    std::vector<Fleet> orders;
     return ScorePlanet(pw, p, defence_exclusions, orders);
 }
 
 // Does a cost analysis for taking over planet p and populates orders with the orders required
 // to do so.
 // Returns score
-int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Order>& orders) {
+int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Fleet>& orders) {
     static int max_delay = Config::Value<int>("attack.max_delay");
     int p_id = p->PlanetID();
 
@@ -504,12 +504,12 @@ int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defe
     // Determine best case 
     int best_score = INF;
     int best_cost = INF;
-    std::vector<Order> best_orders;
+    std::vector<Fleet> best_orders;
 
     for ( int delay=0; delay <= max_delay; ++delay ) {
         int score = INF;
         int cost = INF;
-        std::vector<Order> current_orders;
+        std::vector<Fleet> current_orders;
 
         int available_ships = 0;
         for ( int i=0; i<my_sorted.size() && cost > available_ships; ++i) {
@@ -560,14 +560,14 @@ int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defe
     orders.insert(orders.end(), best_orders.begin(), best_orders.end());
 
     if ( orders.size() > 0 ) {
-        LOG( "  score of planet " << p_id << " = " << best_score << " (" <<  best_cost << ") after " << orders.back().delay << " days" );
+        LOG( "  score of planet " << p_id << " = " << best_score << " (" <<  best_cost << ") after " << orders.back().launch << " days" );
     }
 
     return best_score;
 }
 
 // Score one source -> dest fleet
-int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Order>& orders) {
+int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Fleet>& orders) {
     static double distance_scale = Config::Value<double>("cost.distance_scale");
     static double growth_scale   = Config::Value<double>("cost.growth_scale");
     static double delay_scale    = Config::Value<double>("cost.delay_scale");
@@ -649,7 +649,7 @@ int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_
         LOG_ERROR( "WTF: " << cost << " " << available_ships << " " << source_ships );
     }
 
-    orders.push_back( Order(source_id, dest_id, required_ships, delay + extra_delay) ); 
+    orders.push_back( Fleet(ME, source_id, dest_id, required_ships, delay + extra_delay) ); 
 
     return score;
 }

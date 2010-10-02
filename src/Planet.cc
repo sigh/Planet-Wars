@@ -67,8 +67,8 @@ int Planet::RemoveShips(int amount) {
     return amount;
 }
 
-void Planet::AddIncomingFleet(const Fleet &f, int delay) {
-    int arrival = f.remaining + delay;
+void Planet::AddIncomingFleet(const Fleet &f) {
+    int arrival = f.remaining();
 
     // ensure incoming_fleets_ is long enough
     if ( arrival + 1 > incoming_fleets_.size() ) {

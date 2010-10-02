@@ -105,12 +105,13 @@ PlanetWars ParseGameState(const std::string& game_state) {
             if (tokens.size() != 7) {
                 throw "Invalid fleet";
             }
-            Fleet f;
-            f.owner = ConvertPlayerID(atoi(tokens[FLEET_OWNER].c_str())); 
-            f.dest = atoi(tokens[FLEET_DEST].c_str()); 
-            f.ships = atoi(tokens[FLEET_SHIPS].c_str()); 
-            f.remaining = atoi(tokens[FLEET_REMAINING].c_str()); 
-            fleets.push_back(f);
+            fleets.push_back(Fleet(
+                ConvertPlayerID(atoi(tokens[FLEET_OWNER].c_str())), 
+                atoi(tokens[FLEET_SOURCE].c_str()),
+                atoi(tokens[FLEET_DEST].c_str()),
+                atoi(tokens[FLEET_SHIPS].c_str()),
+                atoi(tokens[FLEET_REMAINING].c_str()) - atoi(tokens[FLEET_LENGTH].c_str()) 
+            ));
         } else {
             throw "Invalid object";
         }
@@ -155,12 +156,12 @@ void ParseMap(const std::string& game_state) {
 }
 
 void FinishTurn(const PlanetWars& pw) {
-    std::vector<Order> orders = pw.Orders();
+    std::vector<Fleet> orders = pw.Orders();
     int num_ships = 0;
 
     // issue all the orders
     for ( int i=0; i < orders.size(); ++i ) {
-        const Order &o = orders[i];
+        const Fleet &o = orders[i];
 
         // TODO: Check if ships the planet has enough ships
         if ( o.source == o.dest || o.ships <= 0 ) {
@@ -184,7 +185,7 @@ void FinishTurn(const PlanetWars& pw) {
     LOG( orders.size() << " Orders (" << num_ships << " ships):" );
 
     for ( int i=0; i < orders.size(); ++i ) {
-        const Order &o = orders[i];
+        const Fleet &o = orders[i];
 
         if ( o.source == o.dest || o.ships <= 0 ) {
             LOG_ERROR( "Invalid order: " << o.source << "->" << o.dest << " (" << o.ships << " ships)" );
