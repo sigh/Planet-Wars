@@ -100,7 +100,7 @@ namespace Config {
         int_config_["antirage"] = 2;
         bool_config_["antirage.exlusions"] = 1;
         bool_config_["attack"] = 1;
-        int_config_["attack.max_delay"] = 0;
+        int_config_["attack.max_delay"] = 20;
         bool_config_["redist"] = 1;
         bool_config_["redist.future"] = 1;
         bool_config_["flee"] = 0;
@@ -108,6 +108,7 @@ namespace Config {
         double_config_["cost.distance_scale"] = 2.0;
         double_config_["cost.growth_scale"] = 2.0;
         int_config_["cost.offset"] = 3;
+        double_config_["cost.delay_scale"] = 2.0;
 
         string_config_["config_file"] = "MyBot.conf";
         string_config_["log_file"] = "";
