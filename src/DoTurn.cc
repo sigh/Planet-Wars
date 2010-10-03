@@ -672,9 +672,9 @@ int ScoreEdge(const PlanetWars& pw, PlanetPtr dest, PlanetPtr source, int availa
         required_ships = source_ships - ( available_ships - cost );
     }
 
-    if ( required_ships <= 0 ) {
+    if ( required_ships < 0 ) {
         // Fix the WTF
-        LOG_ERROR( "WTF: " << cost << " " << available_ships << " " << source_ships );
+        LOG_ERROR( "WTF: attacking " << dest_id << ": " << cost << " " << available_ships << " " << source_ships );
     }
 
     orders.push_back( Fleet(ME, source_id, dest_id, required_ships, delay + extra_delay) ); 
