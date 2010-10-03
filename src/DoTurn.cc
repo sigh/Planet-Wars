@@ -21,7 +21,8 @@ int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defe
 std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player);
 std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player);
 
-int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Fleet>& orders);
+int ScoreEdge(const PlanetWars& pw, PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Fleet>& orders);
+int ShipsWithinRange(const PlanetWars& pw, PlanetPtr p, int distance, int owner);
 
 void DoTurn(PlanetWars& pw, int turn) {
     int my_planet_count = pw.PlanetsOwnedBy(ME).size();
@@ -542,7 +543,7 @@ int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defe
             
             available_ships += source_ships;
 
-            score = ScoreEdge(p, source, available_ships, source_ships, delay, cost, current_orders);
+            score = ScoreEdge(pw, p, source, available_ships, source_ships, delay, cost, current_orders);
         }
 
         // If the cost is too large then we can generate no orders
@@ -567,7 +568,7 @@ int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defe
 }
 
 // Score one source -> dest fleet
-int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Fleet>& orders) {
+int ScoreEdge(const PlanetWars& pw, PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Fleet>& orders) {
     static double distance_scale = Config::Value<double>("cost.distance_scale");
     static double growth_scale   = Config::Value<double>("cost.growth_scale");
     static double delay_scale    = Config::Value<double>("cost.delay_scale");
@@ -595,15 +596,18 @@ int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_
             // PlanetState future_state = p->FutureState(future_days);
             // cost = future_state.ships + ( distance - future_days ) * p->EffectiveGrowthRate(future_owner);
 
+            int score_cost = cost + ShipsWithinRange(pw,dest,distance,ENEMY); 
+
             // TODO: determine the best factor for distance
-            score = (int)((double)cost/growth_rate/growth_scale + delay/delay_scale + distance*distance_scale);
+            score = (int)((double)score_cost/growth_rate/growth_scale + delay/delay_scale + distance*distance_scale);
             // score = distance + distance/2;
         }
         else {
             // For a neutral planet:
             //   the number of days to travel to the planet
             //   + time to regain units spent
-            score = ceil((double)cost/growth_rate) + delay/delay_scale + distance;
+            int score_cost = cost + ShipsWithinRange(pw,dest,distance,ENEMY); 
+            score = ceil((double)score_cost/growth_rate) + delay/delay_scale + distance;
         }
     }
     else {
@@ -617,9 +621,10 @@ int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_
         for ( int arrive = future_days+1; arrive >= distance + delay; --arrive ) {
             // TODO: Another magic param 
             int cost = dest->Cost( arrive ); 
+            int score_cost = cost + ShipsWithinRange(pw,dest,distance, ENEMY); 
 
             // int score = arrive + arrive/2;
-            int score = (int)((double)cost/growth_rate/growth_scale + delay/delay_scale + (arrive-delay)*distance_scale);
+            int score = (int)((double)score_cost/growth_rate/growth_scale + delay/delay_scale + (arrive-delay)*distance_scale);
             if ( score < best_score ) {
                 best_score = score;
                 extra_delay = arrive - distance - delay;
@@ -652,4 +657,21 @@ int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_
     orders.push_back( Fleet(ME, source_id, dest_id, required_ships, delay + extra_delay) ); 
 
     return score;
+}
+
+int ShipsWithinRange(const PlanetWars& pw, PlanetPtr p, int distance, int owner) {
+    std::vector<int> planets = Map::PlanetsByDistance(p->PlanetID());
+
+    int ships = 0;
+
+    for (int i=1; i < planets.size(); ++i ) {
+        int helper_distance = Map::Distance(p->PlanetID(), planets[i]);
+        if ( helper_distance >= distance ) break;
+
+        PlanetPtr helper = pw.GetPlanet( planets[i] ); 
+        if ( helper->Owner() != owner ) continue;
+        ships += helper->Ships();
+    }
+    
+    return ships;
 }
