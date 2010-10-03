@@ -65,8 +65,7 @@ std::vector<Fleet> PlanetWars::Orders() const {
 }
 
 void PlanetWars::IssueOrder(const Fleet& order) {
-    planets_[order.source]->RemoveShips( order.ships );
-    planets_[order.dest]->AddIncomingFleet( order );
+    AddFleet(order);
 
     // only store order if it is for now
     if ( order.launch == 0 ) {
@@ -77,3 +76,10 @@ void PlanetWars::IssueOrder(const Fleet& order) {
     }
 }
 
+void PlanetWars::AddFleet(const Fleet& order) {
+    if ( order.launch >= 0 ) {
+        planets_[order.source]->RemoveShips( order.ships );
+    }
+
+    planets_[order.dest]->AddIncomingFleet( order );
+}

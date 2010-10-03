@@ -109,6 +109,7 @@ namespace Config {
         double_config_["cost.growth_scale"] = 2.0;
         int_config_["cost.offset"] = 3;
         double_config_["cost.delay_scale"] = 2.0;
+        bool_config_["cost.use_egr"] = 0;
 
         string_config_["config_file"] = "MyBot.conf";
         string_config_["log_file"] = "";

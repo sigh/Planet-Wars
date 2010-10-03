@@ -7,7 +7,8 @@
 Planet::Planet( int planet_id, int owner, int num_ships):
     planet_id_(planet_id), owner_(owner), num_ships_(num_ships),
     update_prediction_(true), locked_ships_(0),
-    incoming_fleets_(1,FleetSummary()) { } 
+    incoming_fleets_(1,FleetSummary()),
+    effective_growth_rate_(Map::GrowthRate(planet_id)) { } 
     
 int Planet::PlanetID() const {
     return planet_id_;
@@ -77,7 +78,15 @@ void Planet::AddIncomingFleet(const Fleet &f) {
 
     incoming_fleets_[arrival][f.owner] += f.ships;
 
+    if ( f.launch < 0 && owner_ == ENEMY && f.owner == ENEMY ) {
+        effective_growth_rate_ += (double)f.ships/f.length();
+    }
+
     update_prediction_ = true;
+}
+
+int Planet::EffectiveGrowthRate() const {
+    return (int)effective_growth_rate_; 
 }
 
 int Planet::LockShips(int ships) {
@@ -103,26 +112,6 @@ PlanetState Planet::FutureState(int days) const {
         }
         return state;
     }
-}
-
-int Planet::EffectiveGrowthRate(int owner) const {
-    int num_days = incoming_fleets_.size();
-    int x = 5;
-    if ( num_days <= x ) { 
-        return Map::GrowthRate(planet_id_);
-    }
-
-    int delta_ships = 0;
-    for ( int day=x+1; day < num_days; ++day ) {
-        delta_ships += incoming_fleets_[day].delta(owner);
-    }
-
-    if ( delta_ships < 0 ) { 
-        delta_ships = 0;
-    }
-    num_days -= x;
-
-    return delta_ships / num_days + Map::GrowthRate(planet_id_);
 }
 
 // TODO: Make this work for any player anytime
