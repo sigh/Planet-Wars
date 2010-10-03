@@ -56,13 +56,14 @@ class Planet {
 
     int RequiredShips() const;
     int ShipExcess(int days) const;
-    int EffectiveGrowthRate(int owner) const;
+    int EffectiveGrowthRate() const;
 
  private:
     int planet_id_;
     int owner_;
     int num_ships_;
     int locked_ships_;
+    double effective_growth_rate_;
 
     std::vector<FleetSummary> incoming_fleets_;
     mutable std::vector<PlanetState> prediction_;
