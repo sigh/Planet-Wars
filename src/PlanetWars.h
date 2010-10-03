@@ -38,6 +38,7 @@ class PlanetWars {
         // source_planet, and you can't send more ships than you actually have on
         // that planet.
         void IssueOrder(const Fleet& order);
+        void AddFleet(const Fleet& order);
 
         // Returns the number of ships that the given player has, either located
         // on planets or in flight.

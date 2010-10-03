@@ -26,6 +26,11 @@ struct Fleet {
         inline int remaining() const { 
             return Map::Distance(source, dest) + launch;
         }
+
+        // number of days a fleet is in flight
+        inline int length() const { 
+            return Map::Distance(source, dest);
+        }
 };
 
 // my ships, enemy ships
