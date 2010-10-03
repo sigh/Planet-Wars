@@ -572,6 +572,7 @@ int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_
     static double growth_scale   = Config::Value<double>("cost.growth_scale");
     static double delay_scale    = Config::Value<double>("cost.delay_scale");
     static int    cost_offset    = Config::Value<int>("cost.offset");
+    static bool   use_egr        = Config::Value<bool>("cost.use_egr");
 
     int source_id = source->PlanetID();
     int dest_id = dest->PlanetID();
@@ -591,9 +592,10 @@ int ScoreEdge(PlanetPtr dest, PlanetPtr source, int available_ships, int source_
         cost = prediction.ships;
 
         if ( future_owner ) {
-            // Uncomment to use effective growth rate
-            // PlanetState future_state = p->FutureState(future_days);
-            // cost = future_state.ships + ( distance - future_days ) * p->EffectiveGrowthRate(future_owner);
+            if ( use_egr ) {
+                PlanetState future_state = dest->FutureState(future_days);
+                cost = future_state.ships + ( distance - future_days ) * dest->EffectiveGrowthRate();
+            }
 
             // TODO: determine the best factor for distance
             score = (int)((double)cost/growth_rate/growth_scale + delay/delay_scale + distance*distance_scale);
