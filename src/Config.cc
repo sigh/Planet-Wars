@@ -103,6 +103,7 @@ namespace Config {
         int_config_["attack.max_delay"] = 0;
         bool_config_["redist"] = 1;
         bool_config_["redist.future"] = 1;
+        int_config_["redist.slack"] = 0;
         bool_config_["flee"] = 0;
 
         double_config_["cost.distance_scale"] = 2.0;

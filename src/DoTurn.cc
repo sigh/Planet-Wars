@@ -409,6 +409,8 @@ void Redistribution(PlanetWars& pw) {
     std::map<int,int>::iterator it;
     std::map<int,int>::iterator found;
 
+    std::map<int,int> original_map(redist_map);
+
     // send ships directly to the end of the redistribution chain
     // this means that more ships get to the front lines quicker
     // it also means that planets in the middle have permanently locked ships
@@ -424,6 +426,25 @@ void Redistribution(PlanetWars& pw) {
         while ( (found = redist_map.find(dest)) != redist_map.end() ) {
             current = dest;
             dest = found->second;
+        }
+        redist_map[source] = dest;
+    }
+
+    static int redist_slack = Config::Value<int>("redist.slack");
+    // route through a staging planet if there is enough slack
+    for ( it=redist_map.begin(); it != redist_map.end(); ++it ) { 
+        int source = it->first;
+        int dest = it->second;
+        int current = source;
+        int distance = Map::Distance(source, dest);
+
+        while ( (found = original_map.find(current)) != redist_map.end() && found->second != dest ) {
+            current = found->second;
+            if ( Map::Distance(source, current) + Map::Distance(current,dest) <= redist_slack + distance ) {
+                LOG(" hopping through " << current);
+                redist_map[source] = current;
+                break;
+            }
         }
         redist_map[source] = dest;
     }
