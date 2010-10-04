@@ -364,8 +364,8 @@ void Redistribution(PlanetWars& pw) {
     // determine distances of all planets to closest ENEMY
     const std::vector<PlanetPtr> planets = pw.Planets();
     std::map<int,int> distances;
-    for (int i = 0; i < planets.size(); ++i) {
-        int planet = planets[i]->PlanetID();
+    foreach ( PlanetPtr p, planets ) {
+        int planet = p->PlanetID();
         int enemy = ClosestPlanetByOwner(pw, planet, ENEMY);
         distances[planet] = enemy >= 0 ? Map::Distance(planet, enemy) : 0;
     }
@@ -373,8 +373,7 @@ void Redistribution(PlanetWars& pw) {
     std::map<int,int> redist_map;
 
     // determine 1 step redistribution
-    for (int i = 0; i < planets.size(); ++i) {
-        PlanetPtr p = planets[i];
+    foreach ( PlanetPtr p, planets ) {
         int p_id = p->PlanetID();
 
         // We only want to redistribute from planets where we are the future owner :D
@@ -410,7 +409,7 @@ void Redistribution(PlanetWars& pw) {
         }
     }
 
-    std::map<int,int>::iterator it;
+    std::pair<int,int> item;
     std::map<int,int>::iterator found;
 
     std::map<int,int> original_map(redist_map);
@@ -423,9 +422,9 @@ void Redistribution(PlanetWars& pw) {
     //
     // Possibly experiment with more conserative skips
     //    (maybe for defence mode - higher growth rate, lower ships)
-    for ( it=redist_map.begin(); it != redist_map.end(); ++it ) { 
-        int source = it->first;
-        int dest = it->second;
+    foreach (item, redist_map ) { 
+        int source = item.first;
+        int dest = item.second;
         int current = source;
         while ( (found = redist_map.find(dest)) != redist_map.end() ) {
             current = dest;
@@ -436,9 +435,9 @@ void Redistribution(PlanetWars& pw) {
 
     static int redist_slack = Config::Value<int>("redist.slack");
     // route through a staging planet if there is enough slack
-    for ( it=redist_map.begin(); it != redist_map.end(); ++it ) { 
-        int source = it->first;
-        int dest = it->second;
+    foreach ( item, redist_map ) {
+        int source = item.first;
+        int dest = item.second;
         int current = source;
         int distance = Map::Distance(source, dest);
 
@@ -454,7 +453,6 @@ void Redistribution(PlanetWars& pw) {
     }
 
     // Output the redistributions
-    std::pair<int,int> item;
     foreach (item, redist_map ) { 
         int source_id = item.first;
         int dest_id = item.second;
@@ -462,6 +460,9 @@ void Redistribution(PlanetWars& pw) {
 
         // Can't redisribute from unowned planets!
         if ( p->Owner() != ME ) continue;
+
+        // Don't mess up neutral stealing!
+        // This prevents us prematurely sending ships to a planet which we might be neutral stealing from the enemy
         if ( pw.GetPlanet( dest_id )->FutureState( Map::Distance( source_id, dest_id ) ).owner == NEUTRAL ) continue;
 
         pw.IssueOrder(Fleet(source_id, dest_id, p->Ships()));
