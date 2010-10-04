@@ -2,6 +2,9 @@
 #include <cstdlib>
 #include <algorithm>
 #include <map>
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
+
 #include "PlanetWars.h"
 #include "Log.h"
 #include "DoTurn.h"
@@ -134,7 +137,6 @@ void Attack(PlanetWars& pw, DefenceExclusions& defence_exclusions) {
             Fleet& order = orders[j];
             order.launch = last_arrival - Map::Distance( order.source, order.dest );
         }
-
 
         // If we reached here we want to actually execute the orders
         for ( int j=0; j<orders.size(); ++j ) {
@@ -391,9 +393,11 @@ void Redistribution(PlanetWars& pw) {
         int closest = -1;
         for ( int j=0; j<sorted.size(); ++j ) {
             int s_id = sorted[j];
-            int s_owner = use_future ? pw.GetPlanet(s_id)->FutureOwner() : pw.GetPlanet(s_id)->Owner();
+            PlanetPtr s = pw.GetPlanet(s_id);
+            int s_owner = use_future ? s->FutureOwner() : s->Owner();
             if ( s_owner == ME && distances[s_id] < distance ) {
                 closest = s_id;
+
                 // If we comment this out then we just throw all units at the planet
                 // closest to the enemy. This leaves our units quite vunerable
                 // But for some reason it is sometimes effective. Find out when and WHY!
@@ -450,14 +454,18 @@ void Redistribution(PlanetWars& pw) {
     }
 
     // Output the redistributions
-    for ( it=redist_map.begin(); it != redist_map.end(); ++it ) { 
-        PlanetPtr p = pw.GetPlanet(it->first);
+    std::pair<int,int> item;
+    foreach (item, redist_map ) { 
+        int source_id = item.first;
+        int dest_id = item.second;
+        PlanetPtr p = pw.GetPlanet(source_id);
 
         // Can't redisribute from unowned planets!
         if ( p->Owner() != ME ) continue;
+        if ( pw.GetPlanet( dest_id )->FutureState( Map::Distance( source_id, dest_id ) ).owner == NEUTRAL ) continue;
 
-        pw.IssueOrder(Fleet(it->first, it->second, p->Ships()));
-        LOG( " Redistributing from " << it->first << " to " << it->second );
+        pw.IssueOrder(Fleet(source_id, dest_id, p->Ships()));
+        LOG( " Redistributing from " << source_id << " to " << dest_id );
     }
 }
 
