@@ -2,12 +2,12 @@
 #define PLANET_H_
 
 #include "Fleet.h"
-#include "counted_ptr.h"
+#include <boost/shared_ptr.hpp>
 
 const int INF = 999999;
 
 class Planet;
-typedef counted_ptr<Planet> PlanetPtr;
+typedef boost::shared_ptr<Planet> PlanetPtr;
 
 // owner, ships
 struct PlanetState {
