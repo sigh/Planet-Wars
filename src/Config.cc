@@ -4,6 +4,8 @@
 #include <sstream>
 #include <map>
 #include <iostream>
+#include <vector>
+#include <algorithm>
 
 #ifdef DEBUG // for local (with boost)
 #include <fstream>
