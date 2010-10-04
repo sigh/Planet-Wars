@@ -6,6 +6,9 @@
 #include "PlanetWars.h"
 #include "Log.h"
 
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
+
 PlanetWars::PlanetWars(std::vector<PlanetPtr> planets)
     : planets_(planets) { }
 
@@ -22,8 +25,7 @@ std::vector<PlanetPtr> PlanetWars::Planets() const {
 
 std::vector<PlanetPtr> PlanetWars::PlanetsOwnedBy(int player) const {
     std::vector<PlanetPtr> r;
-    for (int i = 0; i < planets_.size(); ++i) {
-        PlanetPtr p = planets_[i];
+    foreach ( PlanetPtr p, planets_ )  {
         if (p->Owner() == player) {
             r.push_back(p);
         }
@@ -33,8 +35,7 @@ std::vector<PlanetPtr> PlanetWars::PlanetsOwnedBy(int player) const {
 
 std::vector<PlanetPtr> PlanetWars::PlanetsNotOwnedBy(int player) const {
     std::vector<PlanetPtr> r;
-    for (int i = 0; i < planets_.size(); ++i) {
-        PlanetPtr p = planets_[i];
+    foreach ( PlanetPtr p, planets_ )  {
         if (p->Owner() != player) {
             r.push_back(p);
         }
