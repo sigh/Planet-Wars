@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sys/time.h>
 #include "GameState.h"
+#include "Player.h"
 #include "Config.h"
 #include "DoTurn.h"
 #include "Log.h"
@@ -68,15 +69,17 @@ const int FLEET_LENGTH = 5;
 const int FLEET_REMAINING = 6;
 
 // convert player id from external representation to internal representation
-int ConvertPlayerID(int player_id) {
-    if ( player_id == 1 ) {
-        return ME;
-    }
-    else if ( player_id == 2 ) {
-        return ENEMY;
-    }
-    else {
-        return NEUTRAL;
+Player ConvertPlayerID(int raw_player_id) {
+    switch (raw_player_id) {
+        case 1:
+            return ME;
+        case 2:
+            return ENEMY;
+        case 0:
+            return NEUTRAL;
+        default:
+            // TODO: log an error?
+            return NEUTRAL;
     }
 }
 
