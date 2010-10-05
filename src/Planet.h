@@ -26,8 +26,8 @@ class Planet {
         int num_ships
     );
 
-    // Returns the ID of this planets. Planets are numbered starting at zero.
-    int PlanetID() const;
+    // id is a such a basic item that it is public
+    const int id;
 
     int Owner() const;
 
@@ -56,15 +56,17 @@ class Planet {
 
     int RequiredShips() const;
     int ShipExcess(int days) const;
+
+    int GrowthRate() const;
     int EffectiveGrowthRate() const;
 
     PlanetPtr Clone() const;
 
  private:
-    int planet_id_;
     int owner_;
     int num_ships_;
     int locked_ships_;
+    int growth_rate_;
     double effective_growth_rate_;
 
     std::vector<FleetSummary> incoming_fleets_;
