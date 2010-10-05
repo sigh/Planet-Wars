@@ -34,7 +34,7 @@ std::vector<PlanetPtr> GameState::Planets() const {
     return planets_;
 }
 
-std::vector<PlanetPtr> GameState::PlanetsOwnedBy(int player) const {
+std::vector<PlanetPtr> GameState::PlanetsOwnedBy(Player player) const {
     std::vector<PlanetPtr> r;
     foreach ( const PlanetPtr& p, planets_ )  {
         if (p->Owner() == player) {
@@ -44,7 +44,7 @@ std::vector<PlanetPtr> GameState::PlanetsOwnedBy(int player) const {
     return r;
 }
 
-std::vector<PlanetPtr> GameState::PlanetsNotOwnedBy(int player) const {
+std::vector<PlanetPtr> GameState::PlanetsNotOwnedBy(Player player) const {
     std::vector<PlanetPtr> r;
     foreach ( const PlanetPtr& p, planets_ )  {
         if (p->Owner() != player) {
@@ -54,20 +54,20 @@ std::vector<PlanetPtr> GameState::PlanetsNotOwnedBy(int player) const {
     return r;
 }
 
-int GameState::Production(int player_id) const {
+int GameState::Production(Player player) const {
     int production = 0;
     foreach ( const PlanetPtr& p, planets_ )  {
-        if ( p->Owner() == player_id ) { 
+        if ( p->Owner() == player ) { 
             production += p->GrowthRate();
         }
     }
     return production;
 }
 
-int GameState::Ships(int player_id) const {
+int GameState::Ships(Player player) const {
     int ships = 0;
     foreach ( const PlanetPtr& p, planets_ )  {
-        ships += p->TotalShips(player_id);
+        ships += p->TotalShips(player);
     }
     return ships;
 }

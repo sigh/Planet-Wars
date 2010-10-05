@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "Planet.h"
+#include "Player.h"
 #include "Fleet.h"
 
 class GameState {
@@ -28,8 +29,8 @@ class GameState {
         // Returns a list of all the planets.
         std::vector<PlanetPtr> Planets() const;
 
-        std::vector<PlanetPtr> PlanetsOwnedBy(int player) const;
-        std::vector<PlanetPtr> PlanetsNotOwnedBy(int player) const;
+        std::vector<PlanetPtr> PlanetsOwnedBy(Player player) const;
+        std::vector<PlanetPtr> PlanetsNotOwnedBy(Player player) const;
 
         // Return a list of the currently pending orders 
         std::vector<Fleet> Orders() const;
@@ -39,10 +40,10 @@ class GameState {
 
         // Returns the number of ships that the given player has, either located
         // on planets or in flight.
-        int Ships(int player_id) const;
+        int Ships(Player player) const;
 
         // The total growth of all planets owned by a player
-        int Production(int player_id) const;
+        int Production(Player player) const;
 
         GameState& operator=(const GameState& state);
 

@@ -4,14 +4,14 @@
 
 #include <algorithm>
 
-Planet::Planet( int planet_id, int owner, int num_ships):
+Planet::Planet( int planet_id, Player owner, int num_ships):
     id(planet_id), owner_(owner), num_ships_(num_ships),
     update_prediction_(true), locked_ships_(0),
     incoming_fleets_(1,FleetSummary()),
     growth_rate_(Map::GrowthRate(id)),
     effective_growth_rate_(growth_rate_) { } 
     
-int Planet::Owner() const {
+Player Planet::Owner() const {
     return owner_;
 }
 
@@ -19,21 +19,21 @@ int Planet::Ships() const {
     return std::max(num_ships_ - locked_ships_,0);
 }
 
-int Planet::TotalShips(int player_id) const {
-    int num_ships = IncomingShips(player_id);
+int Planet::TotalShips(Player player) const {
+    int num_ships = IncomingShips(player);
 
-    if ( owner_ == player_id ) {
+    if ( owner_ == player ) {
         num_ships += num_ships_;
     }
 
     return num_ships;
 }
 
-int Planet::IncomingShips(int player_id) const {
+int Planet::IncomingShips(Player player) const {
     int num_ships = 0;
 
     for ( int i=0; i < incoming_fleets_.size(); ++i ) {
-        num_ships += incoming_fleets_[i][player_id];
+        num_ships += incoming_fleets_[i][player];
     }
 
     return num_ships;

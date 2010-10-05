@@ -2,6 +2,7 @@
 #define PLANET_H_
 
 #include "Fleet.h"
+#include "Player.h"
 #include <boost/shared_ptr.hpp>
 
 const int INF = 999999;
@@ -11,7 +12,7 @@ typedef boost::shared_ptr<Planet> PlanetPtr;
 
 // owner, ships
 struct PlanetState {
-    int owner;
+    Player owner;
     int ships;
 };
 
@@ -22,27 +23,27 @@ class Planet {
     // Initializes a planet.
     Planet( 
         int planet_id,
-        int owner,
+        Player owner,
         int num_ships
     );
 
     // id is a such a basic item that it is public
     const int id;
 
-    int Owner() const;
+    Player Owner() const;
 
     // The number of ships on the planet. This is the "population" of the planet.
     int Ships() const;
 
     // The number of ships coming to the planet owned by given player
-    int IncomingShips(int player_id) const;
+    int IncomingShips(Player player) const;
 
     // Try to remove amount ships and return the number of ships actually removed
     int RemoveShips(int amount);
 
     // The number of ships on the planet OR coming to the planet
     // owned by given player
-    int TotalShips(int player_id) const;
+    int TotalShips(Player player) const;
 
     void AddIncomingFleet(const Fleet& f);
 
@@ -63,7 +64,7 @@ class Planet {
     PlanetPtr Clone() const;
 
  private:
-    int owner_;
+    Player owner_;
     int num_ships_;
     int locked_ships_;
     int growth_rate_;

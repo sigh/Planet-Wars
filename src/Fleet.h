@@ -2,16 +2,17 @@
 #define FLEET_H_
 
 #include "Map.h"
+#include "Player.h"
 
 struct Fleet {
     public:
-        int owner;      // player id of owner
+        Player owner;   // owner of the fleet
         int source;     // planet id of source
         int dest;       // planet id of destination
         int ships;      // number of ships in fleet
         int launch;     // number of days until launch (negative if fleet is already in flight)
 
-        Fleet(int owner, int source, int dest, int ships, int launch=0)
+        Fleet(Player owner, int source, int dest, int ships, int launch=0)
             : owner(owner), source(source), dest(dest), ships(ships), launch(launch) {
                 // TODO: Warn and log error about empty order
         }
@@ -36,16 +37,16 @@ struct Fleet {
 // my ships, enemy ships
 class FleetSummary {
     public:
-        inline int& operator [](int player) {
+        inline int& operator [](Player player) {
            return player == ME ? me_ : enemy_; 
         }
 
-        inline int operator [](int player) const {
+        inline int operator [](Player player) const {
            return player == ME ? me_ : enemy_; 
         }
 
         // difference in ships (favoring player)
-        inline int delta(int player=1) const {
+        inline int delta(Player player=ME) const {
             if ( player == ME ) {
                 return me_ - enemy_;
             }
