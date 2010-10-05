@@ -58,7 +58,7 @@ int GameState::Production(int player_id) const {
     int production = 0;
     foreach ( const PlanetPtr& p, planets_ )  {
         if ( p->Owner() == player_id ) { 
-            production += Map::GrowthRate(p->PlanetID());
+            production += p->GrowthRate();
         }
     }
     return production;
