@@ -15,6 +15,7 @@
 class GameState {
     public:
         GameState(int turn, std::vector<PlanetPtr>& planets);
+        GameState(const GameState& state);
 
         // return the turn number that we are on
         int Turn() const;
@@ -43,12 +44,16 @@ class GameState {
         // The total growth of all planets owned by a player
         int Production(int player_id) const;
 
+        GameState& operator=(const GameState& state);
+
     private:
         // Store all the planets and fleets. OMG we wouldn't wanna lose all the
         // planets and fleets, would we!?
         std::vector<PlanetPtr> planets_;
         std::vector<Fleet> orders_;
         int turn_;
+
+        void CopyPlanets(const std::vector<PlanetPtr>& planets);
 };
 
 #endif

@@ -10,7 +10,16 @@
 #include "DoTurn.h"
 
 void DoTurn(const GameState& state, std::vector<Fleet>& orders) {
+    LOG(" state: planet 1 ships = " << state.Planet(1)->Ships() );
 
+    GameState state1 = state;
+    LOG(" state1: planet 1 ships = " << state1.Planet(1)->Ships() );
+    LOG(" Remove ships");
+    state1.Planet(1)->RemoveShips( state1.Planet(1)->Ships() );
+    LOG(" state: planet 1 ships = " << state.Planet(1)->Ships() );
+    LOG(" state1: planet 1 ships = " << state1.Planet(1)->Ships() );
+    GameState state2 = state1;
+    LOG(" state2: planet 1 ships = " << state2.Planet(1)->Ships() );
 }
 
 /*

@@ -238,6 +238,7 @@ int main(int argc, char *argv[]) {
                 timeval init;
                 timeval finish;
 
+                // TODO: Start counting from time when we receive first line of next command
                 gettimeofday(&init,NULL);
 
                 if ( ! map_parsed ) {
