@@ -14,6 +14,11 @@
 GameState::GameState(int turn, std::vector<PlanetPtr>& planets)
     : planets_(planets), turn_(turn) { }
 
+GameState::GameState(const GameState& state)
+    : orders_(state.orders_), turn_(state.turn_) {
+    CopyPlanets(state.planets_);
+}
+
 int GameState::Turn() const {
     return turn_;
 }
@@ -89,4 +94,24 @@ void GameState::AddFleet(const Fleet& order) {
     }
 
     planets_[order.dest]->AddIncomingFleet( order );
+}
+
+GameState& GameState::operator=(const GameState& state) {
+    if ( this != &state ) {
+        // Copy the orders and the turns
+        orders_ = state.orders_;
+        turn_ = state.turn_;
+
+        // we want to CLONE the planets because they are pointers
+        CopyPlanets(state.planets_);
+    }
+
+    return *this;
+}
+
+void GameState::CopyPlanets(const std::vector<PlanetPtr>& planets) {
+    planets_.clear();
+    foreach ( const PlanetPtr& p, planets ) {
+        planets_.push_back(p->Clone());
+    }
 }
