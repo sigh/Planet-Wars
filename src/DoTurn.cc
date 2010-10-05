@@ -5,10 +5,15 @@
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 
-#include "PlanetWars.h"
+#include "GameState.h"
 #include "Log.h"
 #include "DoTurn.h"
 
+void DoTurn(const GameState& state, std::vector<Fleet>& orders) {
+
+}
+
+/*
 typedef std::map<int, std::pair<int,int> > DefenceExclusions;
 
 void Defence(PlanetWars& pw);
@@ -707,3 +712,5 @@ int ShipsWithinRange(const PlanetWars& pw, PlanetPtr p, int distance, int owner)
     
     return ships;
 }
+
+*/

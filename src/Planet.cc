@@ -280,3 +280,7 @@ int Planet::ShipExcess(int days) const {
     return ships_delta;
 }
 
+PlanetPtr Planet::Clone() const {
+    return PlanetPtr(new Planet(*this));
+}
+

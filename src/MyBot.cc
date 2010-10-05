@@ -6,9 +6,13 @@
 #include <vector>
 #include <fstream>
 #include <sys/time.h>
-#include "PlanetWars.h"
+#include "GameState.h"
+#include "Config.h"
 #include "DoTurn.h"
 #include "Log.h"
+
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
 
 #ifdef DEBUG
 std::ofstream LOG_FILE;
@@ -76,11 +80,13 @@ int ConvertPlayerID(int player_id) {
     }
 }
 
-PlanetWars ParseGameState(const std::string& game_state) {
+GameState ParseGameState(const std::string& game_state) {
+    static int turn = 0;
     std::vector<PlanetPtr> planets;
     std::vector<Fleet> fleets;
     std::vector<std::string> lines = StringUtil::Tokenize(game_state, "\n");
     int planet_id = 0;
+
     for (unsigned int i = 0; i < lines.size(); ++i) {
         std::string& line = lines[i];
         size_t comment_begin = line.find_first_of('#');
@@ -117,16 +123,17 @@ PlanetWars ParseGameState(const std::string& game_state) {
         }
     }
 
+    turn += 1;
+
     // TODO: make this less coypying around
-    PlanetWars pw(planets);
+    GameState state(turn, planets);
 
     // inform planets about fleets
-    for (int i = 0; i < fleets.size(); ++i) {
-        const Fleet& f = fleets[i];
-        pw.AddFleet(f);
+    foreach ( const Fleet& f, fleets ) {
+        state.AddFleet(f);
     }
 
-    return pw;
+    return state;
 }
 
 void ParseMap(const std::string& game_state) {
@@ -158,17 +165,20 @@ void ParseMap(const std::string& game_state) {
     Map::Init();
 }
 
-void FinishTurn(const PlanetWars& pw) {
-    std::vector<Fleet> orders = pw.Orders();
+void FinishTurn(const GameState& state, const std::vector<Fleet>& orders) {
     int num_ships = 0;
 
     // issue all the orders
-    for ( int i=0; i < orders.size(); ++i ) {
-        const Fleet &o = orders[i];
-
-        // TODO: Check if ships the planet has enough ships
-        if ( o.source == o.dest || o.ships <= 0 ) {
-            // ensure that the number of ships is positive
+    foreach ( const Fleet& o, orders ) {
+        if ( o.source == o.dest 
+                || o.ships <= 0 
+                || o.ships > state.Planet(o.source)->Ships() 
+                || state.Planet(o.source)->Owner() != ME 
+        ) {
+            // ensure the order is not to the same planet
+            // and that the number of ships is positive
+            // and that the source has enough ships
+            // and that we own the planet
             continue;
         }
 
@@ -187,16 +197,18 @@ void FinishTurn(const PlanetWars& pw) {
     // Log AFTER we have sent the command (wastes less time)
     LOG( orders.size() << " Orders (" << num_ships << " ships):" );
 
-    for ( int i=0; i < orders.size(); ++i ) {
-        const Fleet &o = orders[i];
-
-        if ( o.source == o.dest || o.ships <= 0 ) {
+    foreach ( const Fleet& o, orders ) {
+        // TODO: seperate out and have different log message for each condition
+        if ( o.source == o.dest 
+                || o.ships <= 0 
+                || o.ships > state.Planet(o.source)->Ships() 
+                || state.Planet(o.source)->Owner() != ME 
+        ) {
             LOG_ERROR( "Invalid order: " << o.source << "->" << o.dest << " (" << o.ships << " ships)" );
         }
         else {
             LOG( o.source << "->" << o.dest << " (" << o.ships << " ships)" );
         }
-
     }
 }
 
@@ -205,7 +217,7 @@ void FinishTurn(const PlanetWars& pw) {
 int main(int argc, char *argv[]) {
     std::string current_line;
     std::string map_data;
-    int turn_number = 0;
+    bool map_parsed = false;
 
     Config::Init(argc, argv);
 
@@ -228,23 +240,23 @@ int main(int argc, char *argv[]) {
 
                 gettimeofday(&init,NULL);
 
-                ++turn_number;
-
-                if ( turn_number == 1 ) {
+                if ( ! map_parsed ) {
                     // On the first turn we calculate the global map data
                     ParseMap(map_data);
+                    map_parsed = true;
                 }
 
-                PlanetWars pw = ParseGameState(map_data);
+                const GameState state = ParseGameState(map_data);
 
                 LOG("");
-                LOG( "== Turn " << turn_number << " ==" );
+                LOG( "== Turn " << state.Turn() << " ==" );
 
-                LOG( "ME:    " << pw.Ships(ME) << "/" << pw.Production(ME) ); 
-                LOG( "ENEMY: " << pw.Ships(ENEMY) << "/" << pw.Production(ENEMY) ); 
+                LOG( "ME:    " << state.Ships(ME) << "/" << state.Production(ME) ); 
+                LOG( "ENEMY: " << state.Ships(ENEMY) << "/" << state.Production(ENEMY) ); 
 
-                DoTurn(pw, turn_number);
-                FinishTurn(pw);
+                std::vector<Fleet> orders;
+                DoTurn(state, orders);
+                FinishTurn(state, orders);
                 map_data = "";
                 
                 gettimeofday(&finish,NULL);

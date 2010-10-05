@@ -58,6 +58,8 @@ class Planet {
     int ShipExcess(int days) const;
     int EffectiveGrowthRate() const;
 
+    PlanetPtr Clone() const;
+
  private:
     int planet_id_;
     int owner_;
