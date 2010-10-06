@@ -4,12 +4,20 @@
 
 #include <algorithm>
 
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
+
 Planet::Planet( int planet_id, Player owner, int num_ships):
-    id(planet_id), owner_(owner), num_ships_(num_ships),
-    update_prediction_(true), locked_ships_(0),
-    incoming_fleets_(1,FleetSummary()),
+    id(planet_id),
+    owner_(owner),
+    num_ships_(num_ships),
+    locked_ships_(0),
     growth_rate_(Map::GrowthRate(id)),
-    effective_growth_rate_(growth_rate_) { } 
+    effective_growth_rate_(growth_rate_),
+    incoming_fleets_(1,FleetSummary()),
+    update_prediction_(true) { 
+
+}
     
 Player Planet::Owner() const {
     return owner_;
@@ -32,19 +40,19 @@ int Planet::TotalShips(Player player) const {
 int Planet::IncomingShips(Player player) const {
     int num_ships = 0;
 
-    for ( int i=0; i < incoming_fleets_.size(); ++i ) {
-        num_ships += incoming_fleets_[i][player];
+    foreach ( const FleetSummary& f, incoming_fleets_ ) {
+        num_ships += f[player];
     }
 
     return num_ships;
 }
 
-int Planet::WeightedIncoming(int days) const {
+int Planet::WeightedIncoming(unsigned int days) const {
     int ships = 0;
     if ( days > incoming_fleets_.size() ) {
         days = incoming_fleets_.size();
     }
-    for ( int i=0; i < days; ++i ) {
+    for ( unsigned int i=0; i < days; ++i ) {
         ships += incoming_fleets_[i].delta(ME);
     }
     return ships;
@@ -66,7 +74,7 @@ int Planet::RemoveShips(int amount) {
 }
 
 void Planet::AddIncomingFleet(const Fleet &f) {
-    int arrival = f.remaining();
+    unsigned int arrival = f.remaining();
 
     // ensure incoming_fleets_ is long enough
     if ( arrival + 1 > incoming_fleets_.size() ) {
@@ -101,7 +109,7 @@ int Planet::LockShips(int ships) {
 }
 
 // predicted owner after all fleets have arrived
-PlanetState Planet::FutureState(int days) const {
+PlanetState Planet::FutureState(unsigned int days) const {
     UpdatePrediction();
     if ( days < prediction_.size() ) {
         return prediction_[days];     
@@ -118,7 +126,7 @@ PlanetState Planet::FutureState(int days) const {
 // TODO: Make this work for any player anytime
 // Currently assumes attacker is playr 1 and
 // Future owner is player 2
-int Planet::Cost( int days ) const {
+int Planet::Cost( unsigned int days ) const {
     if ( days >= prediction_.size() ) {
         PlanetState state = FutureState(days);
         return state.owner == ME ? 0 : state.ships + 1;
@@ -152,7 +160,7 @@ int Planet::Cost( int days ) const {
     }
 
     // TODO: Merge with required ships
-    for ( int i = days+1; i < incoming_fleets_.size(); ++i ) {
+    for ( unsigned int i = days+1; i < incoming_fleets_.size(); ++i ) {
         const FleetSummary &f = incoming_fleets_[i];
         ships_delta += growth_rate_ + f.delta(ME);
         if ( ships_delta < 0 ) {
@@ -191,7 +199,7 @@ void Planet::UpdatePrediction() const {
     prediction_.push_back(state);
     std::vector<int> sort_states(3,0);
 
-    for ( int day=1; day < incoming_fleets_.size(); ++day ) {
+    for ( unsigned int day=1; day < incoming_fleets_.size(); ++day ) {
         const FleetSummary &f = incoming_fleets_[day];
 
         // grow planets which have an owner
@@ -244,7 +252,7 @@ int Planet::RequiredShips() const {
     int ships_delta = 0;
     int required_ships = 0;
 
-    for ( int day=1; day < incoming_fleets_.size(); ++day ) {
+    for ( unsigned int day=1; day < incoming_fleets_.size(); ++day ) {
         const FleetSummary &f = incoming_fleets_[day];
         ships_delta += growth_rate_ + f.delta(ME);
         if ( ships_delta < 0 ) {
@@ -256,11 +264,11 @@ int Planet::RequiredShips() const {
     return required_ships;
 }
 
-int Planet::ShipExcess(int days) const {
+int Planet::ShipExcess(unsigned int days) const {
     int ships_delta = 0;
     int required_ships = 0;
 
-    int day = 1;
+    unsigned int day = 1;
     for ( ; day < incoming_fleets_.size() && day < days; ++day ) {
         const FleetSummary &f = incoming_fleets_[day];
         ships_delta += growth_rate_ + f.delta(ME);

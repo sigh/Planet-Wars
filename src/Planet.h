@@ -49,14 +49,14 @@ class Planet {
 
     // lock ships onto planet and return the number of ships lockd
     int LockShips( int ships );
-    PlanetState FutureState(int days) const;
+    PlanetState FutureState(unsigned int days) const;
     int FutureOwner() const;
-    int Cost( int days ) const;
+    int Cost( unsigned int days ) const;
     int FutureDays() const;
-    int WeightedIncoming(int days=INF) const;
+    int WeightedIncoming(unsigned int days=INF) const;
 
     int RequiredShips() const;
-    int ShipExcess(int days) const;
+    int ShipExcess(unsigned int days) const;
 
     int GrowthRate() const;
     int EffectiveGrowthRate() const;
