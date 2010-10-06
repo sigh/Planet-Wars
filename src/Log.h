@@ -21,7 +21,7 @@ extern std::string PROG_NAME;
 inline void LOG_INIT(const char* prog_name, std::string log_filename) {
     // determine the name of the program
     PROG_NAME = std::string(prog_name);
-    int pos = PROG_NAME.rfind('/');
+    unsigned int pos = PROG_NAME.rfind('/');
     if ( pos != std::string::npos ) {
         PROG_NAME.replace(0, pos+1, "");
     }
