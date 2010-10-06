@@ -45,6 +45,14 @@ class GameState {
         // The total growth of all planets owned by a player
         int Production(Player player) const;
 
+        // Determine the closest planet to the given planet owned by player
+        // Return a NULL pointer if not found
+        PlanetPtr ClosestPlanetByOwner(PlanetPtr& planet, Player player);
+
+    // Determine the number of ships owned by the given player within
+    //   distance of planet
+    int ShipsWithinRange(PlanetPtr planet, int distance, Player owner);
+
         GameState& operator=(const GameState& state);
 
     private:

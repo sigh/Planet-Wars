@@ -115,3 +115,31 @@ void GameState::CopyPlanets(const std::vector<PlanetPtr>& planets) {
         planets_.push_back(p->Clone());
     }
 }
+
+PlanetPtr GameState::ClosestPlanetByOwner(PlanetPtr& planet, Player player) {
+    const std::vector<int>& sorted = Map::PlanetsByDistance( planet->id );
+
+    foreach ( int p, sorted ) {
+        if ( planets_[p]->Owner() == player ) {
+            return planets_[p];
+        }
+    }
+
+    return PlanetPtr();
+}
+
+int GameState::ShipsWithinRange(PlanetPtr planet, int distance, Player owner) {
+    const std::vector<int>& sorted = Map::PlanetsByDistance(planet->id);
+
+    int ships = 0;
+
+    foreach ( int i, sorted ) {
+        int helper_distance = Map::Distance(planet->id, i);
+        if ( helper_distance >= distance ) break;
+
+        if ( planets_[i]->Owner() != owner ) continue;
+        ships += planets_[i]->Ships();
+    }
+    
+    return ships;
+}
