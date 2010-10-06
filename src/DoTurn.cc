@@ -9,20 +9,18 @@
 #include "Log.h"
 #include "DoTurn.h"
 
-void DoTurn(const GameState& state, std::vector<Fleet>& orders) {
-    LOG(" state: planet 1 ships = " << state.Planet(1)->Ships() );
+void DoTurn(const GameState& initial_state, std::vector<Fleet>& orders) {
+    // Create a mutable version of the state
+    GameState state = initial_state;
 
-    GameState state1 = state;
-    LOG(" state1: planet 1 ships = " << state1.Planet(1)->Ships() );
-    LOG(" Remove ships");
-    state1.Planet(1)->RemoveShips( state1.Planet(1)->Ships() );
-    LOG(" state: planet 1 ships = " << state.Planet(1)->Ships() );
-    LOG(" state1: planet 1 ships = " << state1.Planet(1)->Ships() );
-    GameState state2 = state1;
-    LOG(" state2: planet 1 ships = " << state2.Planet(1)->Ships() );
 }
 
 /*
+ 
+TODO: convert to GameState methods:
+int ClosestPlanetByOwner(const PlanetWars& pw, int planet, int player); // Rename closest planet to (with owner optional)
+int ShipsWithinRange(const PlanetWars& pw, PlanetPtr p, int distance, int owner);
+
 typedef std::map<int, std::pair<int,int> > DefenceExclusions;
 
 void Defence(PlanetWars& pw);
@@ -32,14 +30,12 @@ DefenceExclusions AntiRage(PlanetWars& pw);
 int AntiRageRequiredShips(PlanetWars &pw, int my_planet, int enemy_planet);
 void Redistribution(PlanetWars& pw);
 void Harass(PlanetWars& pw, int planet, std::vector<Fleet>& orders);
-int ClosestPlanetByOwner(const PlanetWars& pw, int planet, int player);
 int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions);
 int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Fleet>& orders);
 std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player);
 std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player);
 
 int ScoreEdge(const PlanetWars& pw, PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Fleet>& orders);
-int ShipsWithinRange(const PlanetWars& pw, PlanetPtr p, int distance, int owner);
 
 void DoTurn(PlanetWars& pw, int turn) {
     int my_planet_count = pw.PlanetsOwnedBy(ME).size();
@@ -500,23 +496,6 @@ void Harass(PlanetWars& pw, int planet, std::vector<Fleet>& orders) {
     pw.IssueOrder(order);
 }
 
-// Determine the clostest planet to the given planet owned by player
-// Return -1 if no planet found
-int ClosestPlanetByOwner(const PlanetWars& pw, int planet, int player) {
-    const std::vector<int>& sorted = Map::PlanetsByDistance( planet );
-
-    int closest = -1;
-
-    for (int i=1; i < sorted.size(); ++i) {
-        if ( pw.GetPlanet(sorted[i])->Owner() == player ) {
-            closest = sorted[i];
-            break;
-        }
-    }
-
-    return closest;
-}
-
 int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions) {
     std::vector<Fleet> orders;
     return ScorePlanet(pw, p, defence_exclusions, orders);
@@ -704,22 +683,4 @@ int ScoreEdge(const PlanetWars& pw, PlanetPtr dest, PlanetPtr source, int availa
 
     return score;
 }
-
-int ShipsWithinRange(const PlanetWars& pw, PlanetPtr p, int distance, int owner) {
-    std::vector<int> planets = Map::PlanetsByDistance(p->PlanetID());
-
-    int ships = 0;
-
-    for (int i=1; i < planets.size(); ++i ) {
-        int helper_distance = Map::Distance(p->PlanetID(), planets[i]);
-        if ( helper_distance >= distance ) break;
-
-        PlanetPtr helper = pw.GetPlanet( planets[i] ); 
-        if ( helper->Owner() != owner ) continue;
-        ships += helper->Ships();
-    }
-    
-    return ships;
-}
-
 */
