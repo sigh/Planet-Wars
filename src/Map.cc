@@ -67,9 +67,9 @@ namespace Map {
 
         for ( int i=0; i<num_planets_; ++i ) {
             // initialise array with planet ids
-            planets_by_distance_[i].resize(num_planets_);
+            planets_by_distance_[i].clear();
             for ( int j=0; j<num_planets_; ++j) {
-                planets_by_distance_[i][j] = j;
+                planets_by_distance_[i].push_back(j);
             }
 
             std::sort( 
@@ -77,6 +77,11 @@ namespace Map {
                 planets_by_distance_[i].end(),
                 ComparePlanetsByDistance(i)
             );
+
+            // Remove closest planet (current planet)
+            //  This SHOULD be done in the initialisation loop but it 
+            //  lead to WORSE results <=== WTF!
+            planets_by_distance_[i].erase(planets_by_distance_[i].begin());
         }
     }
 

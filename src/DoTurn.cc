@@ -148,7 +148,7 @@ int AntiRageRequiredShips(const GameState &state, const PlanetPtr& my_planet, co
     const std::vector<int>& sorted = Map::PlanetsByDistance( my_planet->id );
     foreach ( int i, sorted ) {
         const PlanetPtr p = state.Planet(i);
-        if ( i == my_planet->id || p->Owner() != ME ) continue;
+        if ( p->Owner() != ME ) continue;
 
         int help_distance =  Map::Distance(my_planet->id, i);
         if ( help_distance >= distance ) break;
@@ -276,7 +276,7 @@ int ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& de
     const std::vector<int>& all_sorted = Map::PlanetsByDistance( p_id );
     std::vector<int> my_sorted;
     foreach ( int source_id, all_sorted ) {
-        if ( source_id != p_id && state.Planet(source_id)->Owner() == ME ) {
+        if ( state.Planet(source_id)->Owner() == ME ) {
             my_sorted.push_back( source_id );
         }
     }

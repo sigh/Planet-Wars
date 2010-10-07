@@ -123,7 +123,6 @@ PlanetPtr GameState::ClosestPlanetByOwner(PlanetPtr planet, Player player) const
     const std::vector<int>& sorted = Map::PlanetsByDistance( planet->id );
 
     foreach ( int p, sorted ) {
-        if ( p == planet->id ) continue;
         if ( planets_[p]->Owner() == player ) {
             return planets_[p];
         }
@@ -138,7 +137,6 @@ int GameState::ShipsWithinRange(PlanetPtr planet, int distance, Player owner) co
     int ships = 0;
 
     foreach ( int i, sorted ) {
-        if ( i == planet->id ) continue;
         int helper_distance = Map::Distance(planet->id, i);
         if ( helper_distance >= distance ) break;
 
@@ -173,7 +171,6 @@ std::map<int,bool> GameState::FutureFrontierPlanets(Player player) const {
         const std::vector<int>& sorted = Map::PlanetsByDistance( opponent_planet->id );
         PlanetPtr closest;
         foreach ( int p, sorted ) {
-            if ( p == opponent_planet->id ) continue;
             if ( planets_[p]->FutureOwner() == player ) {
                 closest = planets_[p];
                 break;
