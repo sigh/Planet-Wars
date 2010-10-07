@@ -7,33 +7,149 @@
 
 #include "GameState.h"
 #include "Log.h"
+#include "Config.h"
 #include "DoTurn.h"
+
+typedef std::map<int, std::pair<int,int> > DefenceExclusions;
+
+void Defence(GameState& state);
+DefenceExclusions AntiRage(GameState& state);
+int AntiRageRequiredShips(const GameState &state, const PlanetPtr& my_planet, const PlanetPtr& enemy_planet);
 
 void DoTurn(const GameState& initial_state, std::vector<Fleet>& orders) {
     // Create a mutable version of the state
     GameState state = initial_state;
 
+    Defence(state);
+
+    DefenceExclusions defence_exclusions = AntiRage(state);
+
+    // Populate orders array with the orders that were generated
+    orders = state.Orders();
+}
+
+/*
+ * Defence
+ */
+
+// Lock the required number of ships onto planets that are under attack
+void Defence(GameState& state) {
+    static bool defence = Config::Value<bool>("defence"); 
+    if ( ! defence ) return;
+
+    LOG("Defence phase");
+
+    std::vector<PlanetPtr> my_planets = state.PlanetsOwnedBy(ME);
+    foreach ( PlanetPtr& p, my_planets ) {
+        // TODO: IF this is an important planet then we must protect
+        // Else we can run away if AFTER all order have been issued we are still 
+        // under attack
+        
+        int required_ships = p->RequiredShips();
+
+        if ( required_ships > 0 ) { 
+            // TODO: This might be impacting the prediction so see if we can fix it
+            //       (Idea send a zero day fleet)
+            p->LockShips(required_ships);
+
+            LOG( " Locking " << required_ships << " ships on planet " << p->id );
+        }
+    }
+}
+
+DefenceExclusions AntiRage(GameState& state) {
+    DefenceExclusions defence_exclusions; 
+
+    // Anti rge level
+    // 0: None    |
+    // 1: closest | Increasing number of ships locked
+    // 2: max     |
+    // 3: sum     v
+    static int anti_rage_level = Config::Value<int>("antirage");
+    static bool have_defence_exclusions = Config::Value<bool>("antirage.exlusions");
+    if ( anti_rage_level == 0 ) return defence_exclusions;
+
+    LOG("Antirage phase");
+
+    std::map<int,bool> frontier_planets = state.FrontierPlanets(ME);
+    std::pair<int,bool> item;
+    foreach ( item, frontier_planets ) {
+        if ( ! item.second ) continue;
+
+        PlanetPtr p = state.Planet(item.first);
+
+        int ships_locked = 0;
+
+        // the planet we are protecting ourselves from
+        PlanetPtr rage_planet;
+
+        if ( anti_rage_level == 1 ) {
+            // defend against only the closest enemy
+            PlanetPtr closest_enemy = state.ClosestPlanetByOwner(p, ENEMY);
+            if ( closest_enemy ) {
+                ships_locked = AntiRageRequiredShips(state, p, closest_enemy );
+                rage_planet = closest_enemy;
+            }
+        }
+        else {
+            // defend against all enemies
+            int max_required_ships = 0;
+            int sum_required_ships = 0;
+            std::vector<PlanetPtr> enemy_planets = state.PlanetsOwnedBy(ENEMY);
+            foreach ( PlanetPtr& enemy_planet, enemy_planets ) {
+                int required_ships = AntiRageRequiredShips(state, p, enemy_planet );
+                if ( required_ships > max_required_ships ) {
+                    max_required_ships = required_ships;
+                    rage_planet = enemy_planet;
+                }
+                sum_required_ships += required_ships;
+            }
+
+            ships_locked = anti_rage_level == 2 ? max_required_ships : sum_required_ships;
+        }
+
+        if ( ships_locked > 0 ) {
+            ships_locked = p->LockShips(ships_locked);
+            if ( anti_rage_level != 3 && have_defence_exclusions ) {
+                defence_exclusions[p->id] = std::pair<int,int>(rage_planet->id, ships_locked);
+            }
+            LOG( " Locking " << ships_locked << " ships on planet " << p->id );
+        }
+    }
+
+    return defence_exclusions;
+}
+
+int AntiRageRequiredShips(const GameState &state, const PlanetPtr& my_planet, const PlanetPtr& enemy_planet) {
+    int distance = Map::Distance(enemy_planet->id, my_planet->id);
+    int required_ships = enemy_planet->Ships() - distance*my_planet->GrowthRate();
+    if ( required_ships <= 0 ) return 0;
+
+    // enslist help
+    const std::vector<int>& sorted = Map::PlanetsByDistance( my_planet->id );
+    foreach ( int i, sorted ) {
+        const PlanetPtr p = state.Planet(i);
+        if ( p->Owner() != ME ) continue;
+
+        int help_distance =  Map::Distance(my_planet->id, i);
+        if ( help_distance >= distance ) break;
+        required_ships -= p->Ships() + p->ShipExcess(distance-help_distance-1);
+    }
+
+    if ( required_ships <= 0 ) return 0;
+
+    return required_ships;
 }
 
 /*
  
-TODO: convert to GameState methods:
-int ClosestPlanetByOwner(const PlanetWars& pw, int planet, int player); // Rename closest planet to (with owner optional)
-int ShipsWithinRange(const PlanetWars& pw, PlanetPtr p, int distance, int owner);
 
-typedef std::map<int, std::pair<int,int> > DefenceExclusions;
-
-void Defence(PlanetWars& pw);
 void Flee(PlanetWars& pw);
 void Attack(PlanetWars& pw, DefenceExclusions& defence_exclusions);
-DefenceExclusions AntiRage(PlanetWars& pw);
-int AntiRageRequiredShips(PlanetWars &pw, int my_planet, int enemy_planet);
 void Redistribution(PlanetWars& pw);
 void Harass(PlanetWars& pw, int planet, std::vector<Fleet>& orders);
 int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions);
 int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Fleet>& orders);
-std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player);
-std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player);
 
 int ScoreEdge(const PlanetWars& pw, PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Fleet>& orders);
 
@@ -210,157 +326,8 @@ void Flee(PlanetWars& pw) {
     }
 }
 
-DefenceExclusions AntiRage(PlanetWars& pw) {
-    DefenceExclusions defence_exclusions; 
 
-    // Anti rge level
-    // 0: None    |
-    // 1: closest | Increasing number of ships locked
-    // 2: max     |
-    // 3: sum     v
-    static int anti_rage_level = Config::Value<int>("antirage");
-    static bool have_defence_exclusions = Config::Value<bool>("antirage.exlusions");
-    if ( anti_rage_level == 0 ) return defence_exclusions;
 
-    LOG("Antirage phase");
-
-    std::map<int,bool> frontier_planets = FrontierPlanets(pw, ME);
-    std::map<int,bool>::iterator it;
-
-    for ( it=frontier_planets.begin(); it != frontier_planets.end(); ++it ) {
-        if ( ! it->second ) continue;
-
-        int p_id = it->first;
-        PlanetPtr p = pw.GetPlanet(p_id);
-
-        int ships_locked;
-
-        // the planet we are protecting ourselves from
-        int rage_planet = -1;
-
-        if ( anti_rage_level == 1 ) {
-            // defend against only the closest enemy
-            int closest_enemy = ClosestPlanetByOwner(pw, p_id, ENEMY);
-            if ( closest_enemy >= 0 ) {
-                ships_locked = AntiRageRequiredShips(pw, p_id, closest_enemy );
-                rage_planet = closest_enemy;
-            }
-        }
-        else {
-            // defend against all enemies
-            int max_required_ships = 0;
-            int sum_required_ships = 0;
-            std::vector<PlanetPtr> enemy_planets = pw.PlanetsOwnedBy(ENEMY);
-            for ( int i=0; i<enemy_planets.size(); ++i ) {
-                int required_ships = AntiRageRequiredShips(pw, p_id, enemy_planets[i]->PlanetID() );
-                if ( required_ships > max_required_ships ) {
-                    max_required_ships = required_ships;
-                    rage_planet = enemy_planets[i]->PlanetID();
-                }
-                sum_required_ships += required_ships;
-            }
-
-            ships_locked = anti_rage_level == 2 ? max_required_ships : sum_required_ships;
-        }
-
-        if ( ships_locked > 0 ) {
-            ships_locked = p->LockShips(ships_locked);
-            if ( anti_rage_level != 3 && have_defence_exclusions ) {
-                defence_exclusions[p_id] = std::pair<int,int>(rage_planet, ships_locked);
-            }
-            LOG( " Locking " << ships_locked << " ships on planet " << p->PlanetID() );
-        }
-    }
-
-    return defence_exclusions;
-}
-
-// Lock the required number of ships onto planets that are under attack
-void Defence(PlanetWars& pw) {
-    static bool defence = Config::Value<bool>("defence"); 
-    if ( ! defence ) return;
-
-    LOG("Defence phase");
-
-    std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
-
-    for (int i = 0; i < my_planets.size(); ++i) {
-        PlanetPtr p = my_planets[i];
-
-        // TODO: IF this is an important planet then we must protect
-        // Else we can run away if AFTER all order have been issued we are still 
-        // under attack
-        
-        int required_ships = p->RequiredShips();
-
-        if ( required_ships > 0 ) { 
-            // TODO: This might be impacting the prediction so see if we can fix it
-            //       (Idea send a zero day fleet)
-            p->LockShips(required_ships);
-
-            LOG( " Locking " << required_ships << " ships on planet " << p->PlanetID() );
-        }
-    }
-}
-
-int AntiRageRequiredShips(PlanetWars &pw, int my_planet, int enemy_planet) {
-    int distance = Map::Distance(enemy_planet, my_planet);
-    int required_ships = pw.GetPlanet(enemy_planet)->Ships() - distance*Map::GrowthRate(my_planet);
-    if ( required_ships <= 0 ) return 0;
-
-    // enslist help
-    const std::vector<int>& sorted = Map::PlanetsByDistance( my_planet );
-    for ( int i=1; i<sorted.size(); ++i ) {
-        const PlanetPtr p = pw.GetPlanet(sorted[i]);
-        if ( p->Owner() != ME ) continue;
-
-        int help_distance =  Map::Distance(my_planet, sorted[i]);
-        if ( help_distance >= distance ) break;
-        required_ships -= p->Ships() + p->ShipExcess(distance-help_distance-1);
-    }
-
-    if ( required_ships <= 0 ) return 0;
-
-    return required_ships;
-}
-
-// Find planets closest to the opponent
-std::map<int,bool> FrontierPlanets(const PlanetWars& pw, int player) {
-    std::map<int,bool> frontier_planets;
-    const std::vector<PlanetPtr> opponent_planets = pw.PlanetsOwnedBy(-player);
-    for (int i = 0; i < opponent_planets.size(); ++i) {
-        int p = opponent_planets[i]->PlanetID();
-        int closest = ClosestPlanetByOwner(pw,p,player);
-        if ( closest >= 0 ) {
-            frontier_planets[closest] = true;
-        }
-    }
-    return frontier_planets;
-}
-
-// Find planets that will be closest to the opponent
-std::map<int,bool> FutureFrontierPlanets(const PlanetWars& pw, int player) {
-    std::map<int,bool> frontier_planets;
-
-    const std::vector<PlanetPtr> opponent_planets = pw.PlanetsOwnedBy(-player);
-
-    // determine future player planets
-    for ( int i=0; i<opponent_planets.size(); ++i ) {
-        const std::vector<int>& sorted = Map::PlanetsByDistance( opponent_planets[i]->PlanetID() );
-        int closest = -1;
-        for (int i=1; i < sorted.size(); ++i) {
-            if ( pw.GetPlanet(sorted[i])->FutureOwner() == player ) {
-                closest = sorted[i];
-                break;
-            }
-        }
-        if ( closest >= 0 ) {
-            frontier_planets[closest] = true;
-        }
-    }
-
-    return frontier_planets;
-}
 
 void Redistribution(PlanetWars& pw) {
     static bool redist = Config::Value<bool>("redist");
