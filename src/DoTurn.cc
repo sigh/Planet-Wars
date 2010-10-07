@@ -390,6 +390,7 @@ int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int avai
             // TODO: determine the best factor for distance
             score = (int)((double)score_cost/growth_rate/growth_scale + delay/delay_scale + distance*distance_scale);
             // score = distance + distance/2;
+            LOG( "  to attack " << dest_id << " from " << source_id << ": cost = " << cost << ", score_cost = " << score_cost << ", score = " << score );
         }
         else {
             // For a neutral planet:
