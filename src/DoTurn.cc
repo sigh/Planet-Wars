@@ -15,13 +15,21 @@ typedef std::map<int, std::pair<int,int> > DefenceExclusions;
 void Defence(GameState& state);
 DefenceExclusions AntiRage(GameState& state);
 int AntiRageRequiredShips(const GameState &state, const PlanetPtr& my_planet, const PlanetPtr& enemy_planet);
-void Attack(GameState& state, DefenceExclusions& defence_exclusions);
 
+void Attack(GameState& state, DefenceExclusions& defence_exclusions);
 int ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions);
 int ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Fleet>& orders);
 int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Fleet>& orders);
 
+void Redistribution(GameState& state);
+
 void DoTurn(const GameState& initial_state, std::vector<Fleet>& orders) {
+    int my_planet_count = initial_state.PlanetsOwnedBy(ME).size();
+    if ( my_planet_count == 0 ) {
+        LOG("We have no planets, we can make no actions");
+        return;
+    }
+
     // Create a mutable version of the state
     GameState state = initial_state;
 
@@ -30,6 +38,10 @@ void DoTurn(const GameState& initial_state, std::vector<Fleet>& orders) {
     DefenceExclusions defence_exclusions = AntiRage(state);
 
     Attack(state, defence_exclusions);
+
+    Redistribution(state);
+
+    LOG("Finishing up");
 
     // Populate orders array with the orders that were generated
     orders = state.Orders();
@@ -433,115 +445,33 @@ int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int avai
 
     return score;
 }
+
 /*
- 
+ * Redistribution
+ */
 
-void Flee(PlanetWars& pw);
-void Redistribution(PlanetWars& pw);
-void Harass(PlanetWars& pw, int planet, std::vector<Fleet>& orders);
-
-
-void DoTurn(PlanetWars& pw, int turn) {
-    int my_planet_count = pw.PlanetsOwnedBy(ME).size();
-    if ( my_planet_count == 0 ) {
-        LOG("We have no planets, we can make no actions");
-        return;
-    }
-
-    Defence(pw);
-
-    DefenceExclusions defence_exclusions = AntiRage(pw);
-
-    Attack(pw, defence_exclusions);
-
-    Redistribution(pw);
-
-    Flee(pw);
-
-    LOG("Finishing up");
-}
-
-
-
-bool SortByGrowthRate(PlanetPtr a, PlanetPtr b) {
-    return Map::GrowthRate(a->PlanetID()) < Map::GrowthRate(b->PlanetID()); 
-}
-
-void Flee(PlanetWars& pw) {
-    static bool flee = Config::Value<bool>("flee");
-    if ( ! flee  ) return;
-
-    LOG("Flee phase");
-
-    std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
-    sort(my_planets.begin(), my_planets.end(), SortByGrowthRate);
-
-    std::vector<PlanetPtr> planets = pw.Planets();
-
-    for ( int i=0; i<my_planets.size(); ++i ) {
-        PlanetPtr p = my_planets[i]; 
-        if ( p->FutureOwner() == ME ) continue;
-
-        int p_id = p->PlanetID();
-        int ships = p->FutureState(0).ships;
-
-        int closest_distance = INF;
-        int destination = -1;
-
-        // if the future owner is not me then see if we can use our ships elsewhere
-        for ( int j=0; j<planets.size(); ++j ) {
-            if ( j == p_id ) continue; 
-
-            PlanetPtr dest = planets[j];
-            if ( dest->Owner() == NEUTRAL ) continue;
-            if ( dest->FutureOwner() != ENEMY ) continue;
-
-            int distance = Map::Distance(p_id, j);
-            int cost = dest->Cost(distance);
-
-            LOG( "   Cost from " << p_id << " to " << j << ": " << cost );
-
-            if ( cost > ships ) continue;
-
-            if ( distance < closest_distance ) {
-                closest_distance = distance;
-                destination = j;
-            }
-        }
-
-        if ( destination >= 0 ) {
-            pw.IssueOrder(Fleet(p_id, destination, ships));
-            LOG( " Fleeing from " << p_id << " to " << destination );
-        }
-    }
-}
-
-
-
-
-void Redistribution(PlanetWars& pw) {
+void Redistribution(GameState& state) {
     static bool redist = Config::Value<bool>("redist");
     static bool use_future = Config::Value<bool>("redist.future");
     if ( !redist ) return;
 
     LOG("Redistribution phase");
 
-    std::map<int,bool> locked_planets = use_future ? FutureFrontierPlanets(pw, ME) : FrontierPlanets(pw,ME);
+    std::map<int,bool> locked_planets = use_future ? state.FutureFrontierPlanets(ME) : state.FrontierPlanets(ME);
 
     // determine distances of all planets to closest ENEMY
-    const std::vector<PlanetPtr> planets = pw.Planets();
+    const std::vector<PlanetPtr> planets = state.Planets();
     std::map<int,int> distances;
     foreach ( PlanetPtr p, planets ) {
-        int planet = p->PlanetID();
-        int enemy = ClosestPlanetByOwner(pw, planet, ENEMY);
-        distances[planet] = enemy >= 0 ? Map::Distance(planet, enemy) : 0;
+        PlanetPtr enemy = state.ClosestPlanetByOwner(p, ENEMY);
+        distances[p->id] = enemy ? Map::Distance(p->id, enemy->id) : 0;
     }
 
     std::map<int,int> redist_map;
 
     // determine 1 step redistribution
     foreach ( PlanetPtr p, planets ) {
-        int p_id = p->PlanetID();
+        int p_id = p->id;
 
         // We only want to redistribute from planets where we are the future owner :D
         if ( p->FutureOwner() != ME ) {
@@ -557,9 +487,8 @@ void Redistribution(PlanetWars& pw) {
         int distance = distances[p_id];
         const std::vector<int>& sorted = Map::PlanetsByDistance( p_id );
         int closest = -1;
-        for ( int j=0; j<sorted.size(); ++j ) {
-            int s_id = sorted[j];
-            PlanetPtr s = pw.GetPlanet(s_id);
+        foreach ( int s_id, sorted ) {
+            PlanetPtr s = state.Planet(s_id);
             int s_owner = use_future ? s->FutureOwner() : s->Owner();
             if ( s_owner == ME && distances[s_id] < distance ) {
                 closest = s_id;
@@ -623,19 +552,81 @@ void Redistribution(PlanetWars& pw) {
     foreach (item, redist_map ) { 
         int source_id = item.first;
         int dest_id = item.second;
-        PlanetPtr p = pw.GetPlanet(source_id);
+        PlanetPtr p = state.Planet(source_id);
 
         // Can't redisribute from unowned planets!
         if ( p->Owner() != ME ) continue;
 
         // Don't mess up neutral stealing!
         // This prevents us prematurely sending ships to a planet which we might be neutral stealing from the enemy
-        if ( pw.GetPlanet( dest_id )->FutureState( Map::Distance( source_id, dest_id ) ).owner == NEUTRAL ) continue;
+        if ( state.Planet( dest_id )->FutureState( Map::Distance( source_id, dest_id ) ).owner == NEUTRAL ) continue;
 
-        pw.IssueOrder(Fleet(source_id, dest_id, p->Ships()));
+        state.IssueOrder(Fleet(source_id, dest_id, p->Ships()));
         LOG( " Redistributing from " << source_id << " to " << dest_id );
     }
 }
+/*
+ 
+
+void Flee(PlanetWars& pw);
+void Harass(PlanetWars& pw, int planet, std::vector<Fleet>& orders);
+
+bool SortByGrowthRate(PlanetPtr a, PlanetPtr b) {
+    return Map::GrowthRate(a->PlanetID()) < Map::GrowthRate(b->PlanetID()); 
+}
+
+void Flee(PlanetWars& pw) {
+    static bool flee = Config::Value<bool>("flee");
+    if ( ! flee  ) return;
+
+    LOG("Flee phase");
+
+    std::vector<PlanetPtr> my_planets = pw.PlanetsOwnedBy(ME);
+    sort(my_planets.begin(), my_planets.end(), SortByGrowthRate);
+
+    std::vector<PlanetPtr> planets = pw.Planets();
+
+    for ( int i=0; i<my_planets.size(); ++i ) {
+        PlanetPtr p = my_planets[i]; 
+        if ( p->FutureOwner() == ME ) continue;
+
+        int p_id = p->PlanetID();
+        int ships = p->FutureState(0).ships;
+
+        int closest_distance = INF;
+        int destination = -1;
+
+        // if the future owner is not me then see if we can use our ships elsewhere
+        for ( int j=0; j<planets.size(); ++j ) {
+            if ( j == p_id ) continue; 
+
+            PlanetPtr dest = planets[j];
+            if ( dest->Owner() == NEUTRAL ) continue;
+            if ( dest->FutureOwner() != ENEMY ) continue;
+
+            int distance = Map::Distance(p_id, j);
+            int cost = dest->Cost(distance);
+
+            LOG( "   Cost from " << p_id << " to " << j << ": " << cost );
+
+            if ( cost > ships ) continue;
+
+            if ( distance < closest_distance ) {
+                closest_distance = distance;
+                destination = j;
+            }
+        }
+
+        if ( destination >= 0 ) {
+            pw.IssueOrder(Fleet(p_id, destination, ships));
+            LOG( " Fleeing from " << p_id << " to " << destination );
+        }
+    }
+}
+
+
+
+
 
 void Harass(PlanetWars& pw, int planet, std::vector<Fleet>& orders) {
     if ( orders.size() < 1 ) return;
@@ -651,105 +642,5 @@ void Harass(PlanetWars& pw, int planet, std::vector<Fleet>& orders) {
     // Issue the harassment order
     LOG( " Harassing " << order.dest << " from " << order.source );
     pw.IssueOrder(order);
-}
-
-int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions) {
-    std::vector<Fleet> orders;
-    return ScorePlanet(pw, p, defence_exclusions, orders);
-}
-
-
-// Score one source -> dest fleet
-int ScoreEdge(const PlanetWars& pw, PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Fleet>& orders) {
-    static double distance_scale = Config::Value<double>("cost.distance_scale");
-    static double growth_scale   = Config::Value<double>("cost.growth_scale");
-    static double delay_scale    = Config::Value<double>("cost.delay_scale");
-    static int    cost_offset    = Config::Value<int>("cost.offset");
-    static bool   use_egr        = Config::Value<bool>("cost.use_egr");
-
-    int source_id = source->PlanetID();
-    int dest_id = dest->PlanetID();
-
-    int future_days = dest->FutureDays();
-    int future_owner = dest->FutureOwner();
-    int growth_rate = Map::GrowthRate(dest_id);
-
-    int distance = Map::Distance( dest_id, source_id );
-    cost = INF;
-    int score = INF;
-    int extra_delay = 0;
-
-    if ( delay + distance > future_days ) {
-        // easy case: we arrive after all the other fleets
-        PlanetState prediction = dest->FutureState( distance + delay );
-        cost = prediction.ships;
-
-        if ( future_owner ) {
-            if ( use_egr ) {
-                PlanetState future_state = dest->FutureState(future_days);
-                cost = future_state.ships + ( distance - future_days ) * dest->EffectiveGrowthRate();
-            }
-
-            int score_cost = cost + ShipsWithinRange(pw,dest,distance,ENEMY); 
-
-            // TODO: determine the best factor for distance
-            score = (int)((double)score_cost/growth_rate/growth_scale + delay/delay_scale + distance*distance_scale);
-            // score = distance + distance/2;
-        }
-        else {
-            // For a neutral planet:
-            //   the number of days to travel to the planet
-            //   + time to regain units spent
-            int score_cost = cost + ShipsWithinRange(pw,dest,distance,ENEMY); 
-            score = ceil((double)score_cost/growth_rate) + delay/delay_scale + distance;
-        }
-    }
-    else {
-        // hard case: we can arrive before some other ships
-        // we know that this planet is (or will be) eventually be owned 
-        // by an enemy
-        int best_score = INF;
-        int best_cost = 0;
-
-        // determine the best day to arrive on, we search up to 12 day AFTER the last fleet arrives
-        for ( int arrive = future_days+1; arrive >= distance + delay; --arrive ) {
-            // TODO: Another magic param 
-            int cost = dest->Cost( arrive ); 
-            int score_cost = cost + ShipsWithinRange(pw,dest,distance, ENEMY); 
-
-            // int score = arrive + arrive/2;
-            int score = (int)((double)score_cost/growth_rate/growth_scale + delay/delay_scale + (arrive-delay)*distance_scale);
-            if ( score < best_score ) {
-                best_score = score;
-                extra_delay = arrive - distance - delay;
-                best_cost = cost;
-            }
-        }
-
-        score = best_score;
-        cost = best_cost;
-    }
-
-    cost += cost_offset;
-    if ( cost < 0 ) {
-        cost = 0;
-    }
-
-    int required_ships = 0;
-    if ( cost > available_ships ) {
-        required_ships = source_ships;
-    }
-    else {
-        required_ships = source_ships - ( available_ships - cost );
-    }
-
-    if ( required_ships < 0 ) {
-        // Fix the WTF
-        LOG_ERROR( "WTF: attacking " << dest_id << ": " << cost << " " << available_ships << " " << source_ships );
-    }
-
-    orders.push_back( Fleet(ME, source_id, dest_id, required_ships, delay + extra_delay) ); 
-
-    return score;
 }
 */
