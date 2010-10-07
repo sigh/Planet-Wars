@@ -19,6 +19,7 @@ void Attack(GameState& state, DefenceExclusions& defence_exclusions);
 
 int ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions);
 int ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Fleet>& orders);
+int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Fleet>& orders);
 
 void DoTurn(const GameState& initial_state, std::vector<Fleet>& orders) {
     // Create a mutable version of the state
@@ -257,7 +258,180 @@ int ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& de
 // to do so.
 // Returns score
 int ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Fleet>& orders) {
-    return 0;
+    static int max_delay = Config::Value<int>("attack.max_delay");
+    int p_id = p->id;
+
+    // sort MY planets in order of distance the target planet
+    const std::vector<int>& all_sorted = Map::PlanetsByDistance( p_id );
+    std::vector<int> my_sorted;
+    foreach ( int source_id, all_sorted ) {
+        if ( source_id != p_id && state.Planet(source_id)->Owner() == ME ) {
+            my_sorted.push_back( source_id );
+        }
+    }
+
+    // determine distance to closest enemy
+    PlanetPtr closest_enemy = state.ClosestPlanetByOwner( p, ENEMY );
+    int closest_enemy_distance = closest_enemy ? Map::Distance(closest_enemy->id, p_id) : INF;
+    int future_owner = p->FutureOwner();
+
+    // Determine best case 
+    int best_score = INF;
+    int best_cost = INF;
+    std::vector<Fleet> best_orders;
+
+    for ( int delay=0; delay <= max_delay; ++delay ) {
+        int score = INF;
+        int cost = INF;
+        std::vector<Fleet> current_orders;
+
+        int available_ships = 0;
+        foreach ( int source_id, my_sorted ) {
+            if ( cost <= available_ships ) break;
+
+            const PlanetPtr source = state.Planet(source_id);
+            int source_ships = source->Ships();
+
+            if ( future_owner == NEUTRAL ) {
+                // Don't attack neutral planets closer to the enemy
+                int distance = Map::Distance( source_id, p_id );
+                // if ( closest_enemy_distance <= distance && p->FutureDays() < distance ) {
+                if ( closest_enemy_distance <= distance ) {
+                    // We do not want this move to be considered AT ALL
+                    // So give it the highest score
+                    cost = INF;
+                    score = INF;
+                    break;
+                }
+            }
+
+            // determine if we have any ship locking exclusion for this 
+            //   source/dest pair
+            DefenceExclusions::const_iterator d_it = defence_exclusions.find(source_id);
+            if ( d_it != defence_exclusions.end() && d_it->second.first == p_id ) {
+                LOG( " Lifting defence exclusion for " << d_it->second.second << " ships on planet " << source_id );
+                source_ships += d_it->second.second;
+                available_ships += delay*Map::GrowthRate(source_id);
+            }
+            
+            available_ships += source_ships;
+
+            score = ScoreEdge(state, p, source, available_ships, source_ships, delay, cost, current_orders);
+        }
+
+        // If the cost is too large then we can generate no orders
+        if ( cost > available_ships ) {
+            current_orders.clear();
+        }
+
+        if ( score < best_score ) {
+            best_score = score;
+            best_cost = cost;
+            best_orders = current_orders;
+        }
+    }
+
+    orders.insert(orders.end(), best_orders.begin(), best_orders.end());
+
+    if ( orders.size() > 0 ) {
+        LOG( "  score of planet " << p_id << " = " << best_score << " (" <<  best_cost << ") after " << orders.back().launch << " days" );
+    }
+
+    return best_score;
+}
+
+// Score one source -> dest fleet
+int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Fleet>& orders) {
+    static double distance_scale = Config::Value<double>("cost.distance_scale");
+    static double growth_scale   = Config::Value<double>("cost.growth_scale");
+    static double delay_scale    = Config::Value<double>("cost.delay_scale");
+    static int    cost_offset    = Config::Value<int>("cost.offset");
+    static bool   use_egr        = Config::Value<bool>("cost.use_egr");
+
+    int source_id = source->id;
+    int dest_id = dest->id;
+
+    int future_days = dest->FutureDays();
+    int future_owner = dest->FutureOwner();
+    int growth_rate = dest->GrowthRate();
+
+    int distance = Map::Distance( dest_id, source_id );
+    cost = INF;
+    int score = INF;
+    int extra_delay = 0;
+
+    if ( delay + distance > future_days ) {
+        // easy case: we arrive after all the other fleets
+        PlanetState prediction = dest->FutureState( distance + delay );
+        cost = prediction.ships;
+
+        if ( future_owner ) {
+            if ( use_egr ) {
+                PlanetState future_state = dest->FutureState(future_days);
+                cost = future_state.ships + ( distance - future_days ) * dest->EffectiveGrowthRate();
+            }
+
+            int score_cost = cost + state.ShipsWithinRange(dest,distance,ENEMY); 
+
+            // TODO: determine the best factor for distance
+            score = (int)((double)score_cost/growth_rate/growth_scale + delay/delay_scale + distance*distance_scale);
+            // score = distance + distance/2;
+        }
+        else {
+            // For a neutral planet:
+            //   the number of days to travel to the planet
+            //   + time to regain units spent
+            int score_cost = cost + state.ShipsWithinRange(dest,distance,ENEMY); 
+            score = ceil((double)score_cost/growth_rate) + delay/delay_scale + distance;
+        }
+    }
+    else {
+        // hard case: we can arrive before some other ships
+        // we know that this planet is (or will be) eventually be owned 
+        // by an enemy
+        int best_score = INF;
+        int best_cost = 0;
+
+        // determine the best day to arrive on, we search up to 12 day AFTER the last fleet arrives
+        for ( int arrive = future_days+1; arrive >= distance + delay; --arrive ) {
+            // TODO: Another magic param 
+            int cost = dest->Cost( arrive ); 
+            int score_cost = cost + state.ShipsWithinRange(dest,distance, ENEMY); 
+
+            // int score = arrive + arrive/2;
+            int score = (int)((double)score_cost/growth_rate/growth_scale + delay/delay_scale + (arrive-delay)*distance_scale);
+            if ( score < best_score ) {
+                best_score = score;
+                extra_delay = arrive - distance - delay;
+                best_cost = cost;
+            }
+        }
+
+        score = best_score;
+        cost = best_cost;
+    }
+
+    cost += cost_offset;
+    if ( cost < 0 ) {
+        cost = 0;
+    }
+
+    int required_ships = 0;
+    if ( cost > available_ships ) {
+        required_ships = source_ships;
+    }
+    else {
+        required_ships = source_ships - ( available_ships - cost );
+    }
+
+    if ( required_ships < 0 ) {
+        // Fix the WTF
+        LOG_ERROR( "WTF: attacking " << dest_id << ": " << cost << " " << available_ships << " " << source_ships );
+    }
+
+    orders.push_back( Fleet(ME, source_id, dest_id, required_ships, delay + extra_delay) ); 
+
+    return score;
 }
 /*
  
@@ -266,7 +440,6 @@ void Flee(PlanetWars& pw);
 void Redistribution(PlanetWars& pw);
 void Harass(PlanetWars& pw, int planet, std::vector<Fleet>& orders);
 
-int ScoreEdge(const PlanetWars& pw, PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Fleet>& orders);
 
 void DoTurn(PlanetWars& pw, int turn) {
     int my_planet_count = pw.PlanetsOwnedBy(ME).size();
@@ -485,94 +658,6 @@ int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defe
     return ScorePlanet(pw, p, defence_exclusions, orders);
 }
 
-// Does a cost analysis for taking over planet p and populates orders with the orders required
-// to do so.
-// Returns score
-int ScorePlanet(const PlanetWars& pw, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Fleet>& orders) {
-    static int max_delay = Config::Value<int>("attack.max_delay");
-    int p_id = p->PlanetID();
-
-    // sort MY planets in order of distance the target planet
-    const std::vector<int>& all_sorted = Map::PlanetsByDistance( p_id );
-    std::vector<int> my_sorted;
-    for ( int i=1; i<all_sorted.size(); ++i) {
-        if ( all_sorted[i] != p_id && pw.GetPlanet(all_sorted[i])->Owner() == ME ) {
-            my_sorted.push_back( all_sorted[i] );
-        }
-    }
-
-    // determine distance to closest enemy
-    int closest_enemy_distance = INF;
-    int closest_enemy = ClosestPlanetByOwner( pw, p_id, ENEMY );
-    if ( closest_enemy >= 0 ) {
-        closest_enemy_distance = Map::Distance(closest_enemy, p_id);
-    }
-    int future_owner = p->FutureOwner();
-
-    // Determine best case 
-    int best_score = INF;
-    int best_cost = INF;
-    std::vector<Fleet> best_orders;
-
-    for ( int delay=0; delay <= max_delay; ++delay ) {
-        int score = INF;
-        int cost = INF;
-        std::vector<Fleet> current_orders;
-
-        int available_ships = 0;
-        for ( int i=0; i<my_sorted.size() && cost > available_ships; ++i) {
-            const PlanetPtr source = pw.GetPlanet(my_sorted[i]);
-
-            int source_id = source->PlanetID();
-            int source_ships = source->Ships();
-
-            if ( future_owner == NEUTRAL ) {
-                // Don't attack neutral planets closer to the enemy
-                int distance = Map::Distance( source_id, p_id );
-                // if ( closest_enemy_distance <= distance && p->FutureDays() < distance ) {
-                if ( closest_enemy_distance <= distance ) {
-                    // We do not want this move to be considered AT ALL
-                    // So give it the highest score
-                    cost = INF;
-                    score = INF;
-                    break;
-                }
-            }
-
-            // determine if we have any ship locking exclusion for this 
-            //   source/dest pair
-            DefenceExclusions::const_iterator d_it = defence_exclusions.find(source_id);
-            if ( d_it != defence_exclusions.end() && d_it->second.first == p_id ) {
-                LOG( " Lifting defence exclusion for " << d_it->second.second << " ships on planet " << source_id );
-                source_ships += d_it->second.second;
-                available_ships += delay*Map::GrowthRate(source_id);
-            }
-            
-            available_ships += source_ships;
-
-            score = ScoreEdge(pw, p, source, available_ships, source_ships, delay, cost, current_orders);
-        }
-
-        // If the cost is too large then we can generate no orders
-        if ( cost > available_ships ) {
-            current_orders.clear();
-        }
-
-        if ( score < best_score ) {
-            best_score = score;
-            best_cost = cost;
-            best_orders = current_orders;
-        }
-    }
-
-    orders.insert(orders.end(), best_orders.begin(), best_orders.end());
-
-    if ( orders.size() > 0 ) {
-        LOG( "  score of planet " << p_id << " = " << best_score << " (" <<  best_cost << ") after " << orders.back().launch << " days" );
-    }
-
-    return best_score;
-}
 
 // Score one source -> dest fleet
 int ScoreEdge(const PlanetWars& pw, PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Fleet>& orders) {
