@@ -187,7 +187,6 @@ void Attack(GameState& state, DefenceExclusions& defence_exclusions) {
         }
 
         // Don't need to do anything if we will own the planet
-        // TODO: Handle in the Distribution phase
         int future_owner = p->FutureOwner();
         if ( future_owner == ME) {
             continue;
@@ -347,6 +346,9 @@ int ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& de
 
     if ( orders.size() > 0 ) {
         LOG( "  score of planet " << p_id << " = " << best_score << " (" <<  best_cost << ") after " << orders.back().launch << " days" );
+    }
+    else {
+        LOG( "  not enough ships to attack " << p_id );
     }
 
     return best_score;
