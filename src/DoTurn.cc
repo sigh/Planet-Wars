@@ -148,7 +148,7 @@ int AntiRageRequiredShips(const GameState &state, const PlanetPtr& my_planet, co
     const std::vector<int>& sorted = Map::PlanetsByDistance( my_planet->id );
     foreach ( int i, sorted ) {
         const PlanetPtr p = state.Planet(i);
-        if ( p->Owner() != ME ) continue;
+        if ( i == my_planet->id || p->Owner() != ME ) continue;
 
         int help_distance =  Map::Distance(my_planet->id, i);
         if ( help_distance >= distance ) break;
