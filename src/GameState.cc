@@ -30,10 +30,13 @@ const PlanetPtr& GameState::Planet(int planet_id) const {
     return planets_[planet_id];
 }
 
-std::vector<PlanetPtr> GameState::Planets() const {
+std::vector<PlanetPtr> GameState::Planets() {
     return planets_;
 }
 
+// WTF: this is const but lets us return non-const PlanetPtr
+//      I tried to overload but couldn't
+//      Either me fail or C++ HUGE fail.
 std::vector<PlanetPtr> GameState::PlanetsOwnedBy(Player player) const {
     std::vector<PlanetPtr> r;
     foreach ( const PlanetPtr& p, planets_ )  {
@@ -116,7 +119,7 @@ void GameState::CopyPlanets(const std::vector<PlanetPtr>& planets) {
     }
 }
 
-PlanetPtr GameState::ClosestPlanetByOwner(PlanetPtr& planet, Player player) {
+PlanetPtr GameState::ClosestPlanetByOwner(PlanetPtr planet, Player player) const {
     const std::vector<int>& sorted = Map::PlanetsByDistance( planet->id );
 
     foreach ( int p, sorted ) {
@@ -128,7 +131,7 @@ PlanetPtr GameState::ClosestPlanetByOwner(PlanetPtr& planet, Player player) {
     return PlanetPtr();
 }
 
-int GameState::ShipsWithinRange(PlanetPtr planet, int distance, Player owner) {
+int GameState::ShipsWithinRange(PlanetPtr planet, int distance, Player owner) const {
     const std::vector<int>& sorted = Map::PlanetsByDistance(planet->id);
 
     int ships = 0;
@@ -142,4 +145,42 @@ int GameState::ShipsWithinRange(PlanetPtr planet, int distance, Player owner) {
     }
     
     return ships;
+}
+
+// Find planets closest to the opponent
+std::map<int,bool> GameState::FrontierPlanets(Player player) const {
+    // TODO: use bitmap
+    std::map<int,bool> frontier_planets;
+    std::vector<PlanetPtr> opponent_planets = PlanetsOwnedBy(-player);
+
+    foreach ( const PlanetPtr& p, opponent_planets ) {
+        PlanetPtr closest = ClosestPlanetByOwner(p,player);
+        if ( closest ) {
+            frontier_planets[closest->id] = true;
+        }
+    }
+    return frontier_planets;
+}
+
+// Find planets that will be closest to the opponent
+std::map<int,bool> GameState::FutureFrontierPlanets(Player player) const {
+    std::map<int,bool> frontier_planets;
+
+    std::vector<PlanetPtr> opponent_planets = PlanetsOwnedBy(-player);
+    foreach ( const PlanetPtr& opponent_planet, opponent_planets ) {
+        const std::vector<int>& sorted = Map::PlanetsByDistance( opponent_planet->id );
+        PlanetPtr closest;
+        foreach ( int p, sorted ) {
+            if ( p == opponent_planet->id ) continue;
+            if ( planets_[p]->FutureOwner() == player ) {
+                closest = planets_[p];
+                break;
+            }
+        }
+        if ( closest ) {
+            frontier_planets[closest->id] = true;
+        }
+    }
+
+    return frontier_planets;
 }

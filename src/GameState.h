@@ -8,6 +8,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 #include "Planet.h"
 #include "Player.h"
@@ -27,9 +28,10 @@ class GameState {
         const PlanetPtr& Planet(int planet_id) const;
 
         // Returns a list of all the planets.
-        std::vector<PlanetPtr> Planets() const;
+        std::vector<PlanetPtr> Planets();
 
         std::vector<PlanetPtr> PlanetsOwnedBy(Player player) const;
+
         std::vector<PlanetPtr> PlanetsNotOwnedBy(Player player) const;
 
         // Return a list of the currently pending orders 
@@ -47,11 +49,17 @@ class GameState {
 
         // Determine the closest planet to the given planet owned by player
         // Return a NULL pointer if not found
-        PlanetPtr ClosestPlanetByOwner(PlanetPtr& planet, Player player);
+        PlanetPtr ClosestPlanetByOwner(PlanetPtr planet, Player player) const;
 
-    // Determine the number of ships owned by the given player within
-    //   distance of planet
-    int ShipsWithinRange(PlanetPtr planet, int distance, Player owner);
+        // Determine the number of ships owned by the given player within
+        //   distance of planet
+        int ShipsWithinRange(PlanetPtr planet, int distance, Player owner) const;
+
+        // Find planets closest to the opponent
+        std::map<int,bool> FrontierPlanets(Player player) const;
+
+        // Find planets that will be closest to the opponent
+        std::map<int,bool> FutureFrontierPlanets(Player player) const;
 
         GameState& operator=(const GameState& state);
 
