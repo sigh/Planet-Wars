@@ -28,7 +28,7 @@ class GameState {
         const PlanetPtr& Planet(int planet_id) const;
 
         // Returns a list of all the planets.
-        std::vector<PlanetPtr> Planets();
+        std::vector<PlanetPtr> Planets() const;
 
         std::vector<PlanetPtr> PlanetsOwnedBy(Player player) const;
 

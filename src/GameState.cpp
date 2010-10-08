@@ -30,7 +30,7 @@ const PlanetPtr& GameState::Planet(int planet_id) const {
     return planets_[planet_id];
 }
 
-std::vector<PlanetPtr> GameState::Planets() {
+std::vector<PlanetPtr> GameState::Planets() const {
     return planets_;
 }
 
