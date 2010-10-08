@@ -1,9 +1,4 @@
-#include <cmath>
 #include <cstdlib>
-#include <algorithm>
-#include <map>
-#include <boost/foreach.hpp>
-#define foreach BOOST_FOREACH
 
 #include "GameState.h"
 #include "Log.h"
@@ -38,12 +33,16 @@ void DoTurn(const GameState& initial_state, std::vector<Fleet>& orders) {
     orders = state.Orders();
 }
 
+#ifndef DEBUG
+
 // We do this because compile_anything script for ai-contest does
 // not recurse into sub directories
 
 #include "strategy/defence.cpp"
 #include "strategy/attack.cpp"
 #include "strategy/redist.cpp"
+
+#endif // DEBUG
 
 /*
  
