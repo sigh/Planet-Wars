@@ -1,4 +1,11 @@
 #include "redist.h"
+#include "../Log.h"
+#include "../Config.h"
+
+#include <map>
+
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
 
 void Redistribution(GameState& state) {
     static bool redist = Config::Value<bool>("redist");

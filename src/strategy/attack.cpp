@@ -1,5 +1,13 @@
 #include "attack.h"
 
+#include "../Log.h"
+#include "../Config.h"
+
+#include <cmath>
+
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
+
 int ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions);
 int ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Fleet>& orders);
 int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Fleet>& orders);

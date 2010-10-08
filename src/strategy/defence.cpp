@@ -1,4 +1,9 @@
 #include "defence.h"
+#include "../Log.h"
+#include "../Config.h"
+
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
 
 int AntiRageRequiredShips(const GameState &state, const PlanetPtr& my_planet, const PlanetPtr& enemy_planet);
 
