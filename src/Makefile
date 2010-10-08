@@ -1,13 +1,13 @@
 CC = g++
 CFLAGS = -g -O3 -Wall -Werror -DDEBUG -DGIT_REVISION=`git rev-parse HEAD`
-SOURCES = MyBot.cc Planet.cc GameState.cc Map.cc Config.cc DoTurn.cc strategy/attack.cpp strategy/defence.cpp strategy/redist.cpp
-OBJECTS=$(SOURCES:.cc=.o)
+SOURCES = MyBot.cpp Planet.cpp GameState.cpp Map.cpp Config.cpp DoTurn.cpp
+OBJECTS=$(SOURCES:.cpp=.o)
 LIBS=-lboost_program_options -lm 
 
 all: MyBot
 
 zip:
-	zip -r MyBot *.cc *.cpp *.h Makefile
+	zip -r MyBot *.cpp *.h Makefile strategy
 
 clean:
 	rm -rf *.o MyBot *.zip
@@ -15,6 +15,6 @@ clean:
 MyBot: $(OBJECTS)
 		$(CC) $(CFLAGS) $(LIBS) $(OBJECTS) -o  MyBot
 
-%.o: %.cc
+%.o: %.cpp
 		$(CC) $(CFLAGS) -c $<
 
