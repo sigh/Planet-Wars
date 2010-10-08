@@ -11,6 +11,7 @@
 int ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions);
 int ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Fleet>& orders);
 int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Fleet>& orders);
+std::vector<PlanetPtr> FindTargets(const GameState& state, const DefenceExclusions& defence_exclusions);
 
 void Attack(GameState& state, DefenceExclusions& defence_exclusions) {
     static bool attack = Config::Value<bool>("attack");
@@ -18,63 +19,12 @@ void Attack(GameState& state, DefenceExclusions& defence_exclusions) {
 
     LOG("Attack phase");
 
-    std::vector<PlanetPtr> planets = state.Planets();
-    std::vector< std::pair<int,int> > scores;
-
-    std::map<int,bool> targets_1 = state.FrontierPlanets(ENEMY); 
-    std::map<int,bool> targets_2 = state.FutureFrontierPlanets(ENEMY); 
-    for (unsigned int p_id=0; p_id<planets.size(); ++p_id) {
-        const PlanetPtr p = planets[p_id];
-        int growth_rate = Map::GrowthRate(p_id);
-
-        // Ignore 0 growth planets for now
-        // LATER: put it back in FOR ENEMIES ONLY
-        // Beware of divide by 0
-        if ( growth_rate == 0 ) {
-            continue;
-        }
-
-        // Don't need to do anything if we will own the planet
-        int future_owner = p->FutureOwner();
-        if ( future_owner == ME) {
-            continue;
-        }
-
-        // If a neutral planet is closer to an enemy then ignore it
-        if ( future_owner == NEUTRAL ) {
-
-            PlanetPtr closest_enemy = state.ClosestPlanetByOwner( p, ENEMY );
-            PlanetPtr closest_me = state.ClosestPlanetByOwner( p, ME );
-
-            if ( closest_enemy && closest_me && Map::Distance( closest_enemy->id, p_id ) <= Map::Distance( closest_me->id, p_id) ) {
-                continue;
-            }
-        }
-
-        // If the planet is owned by an enemy and it is NOT a frontier planet then ignore
-        if ( p->Owner() == ENEMY && ! ( targets_1[p_id] || targets_2[p_id] ) ) {
-            continue;
-        }
-
-        // Don't try to neutral steal planets that we would not otherwise attack
-        if ( future_owner == ENEMY && p->Owner() == NEUTRAL && ! targets_2[p_id] ) {
-            continue;
-        }
-
-        int score = ScorePlanet(state, p, defence_exclusions);
-        scores.push_back( std::pair<int,int>(score, p_id) );
-    }
-
-    // sort scores
-    std::sort(scores.begin(), scores.end());
+    std::vector<PlanetPtr> targets = FindTargets(state, defence_exclusions);
 
     LOG(" Starting attacks");
 
     // start attacking planets based on score
-    std::pair<int,int> s;
-    foreach ( s, scores ) {
-        PlanetPtr p = state.Planet(s.second);
-
+    foreach ( PlanetPtr p, targets ) {
         // list of the orders that we will want to execute
         std::vector<Fleet> orders;
 
@@ -295,4 +245,68 @@ int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int avai
     orders.push_back( Fleet(ME, source_id, dest_id, required_ships, delay + extra_delay) ); 
 
     return score;
+}
+
+// Find potential targets in order of score
+std::vector<PlanetPtr> FindTargets(const GameState& state, const DefenceExclusions& defence_exclusions) {
+    LOG(" Finding targets");
+
+    std::vector<PlanetPtr> planets = state.Planets();
+    std::vector< std::pair<int,int> > scores;
+
+    std::map<int,bool> targets_1 = state.FrontierPlanets(ENEMY); 
+    std::map<int,bool> targets_2 = state.FutureFrontierPlanets(ENEMY); 
+    for (unsigned int p_id=0; p_id<planets.size(); ++p_id) {
+        const PlanetPtr p = planets[p_id];
+        int growth_rate = Map::GrowthRate(p_id);
+
+        // Ignore 0 growth planets for now
+        // LATER: put it back in FOR ENEMIES ONLY
+        // Beware of divide by 0
+        if ( growth_rate == 0 ) {
+            continue;
+        }
+
+        // Don't need to do anything if we will own the planet
+        int future_owner = p->FutureOwner();
+        if ( future_owner == ME) {
+            continue;
+        }
+
+        // If a neutral planet is closer to an enemy then ignore it
+        if ( future_owner == NEUTRAL ) {
+
+            PlanetPtr closest_enemy = state.ClosestPlanetByOwner( p, ENEMY );
+            PlanetPtr closest_me = state.ClosestPlanetByOwner( p, ME );
+
+            if ( closest_enemy && closest_me && Map::Distance( closest_enemy->id, p_id ) <= Map::Distance( closest_me->id, p_id) ) {
+                continue;
+            }
+        }
+
+        // If the planet is owned by an enemy and it is NOT a frontier planet then ignore
+        if ( p->Owner() == ENEMY && ! ( targets_1[p_id] || targets_2[p_id] ) ) {
+            continue;
+        }
+
+        // Don't try to neutral steal planets that we would not otherwise attack
+        if ( future_owner == ENEMY && p->Owner() == NEUTRAL && ! targets_2[p_id] ) {
+            continue;
+        }
+
+        int score = ScorePlanet(state, p, defence_exclusions);
+        scores.push_back( std::pair<int,int>(score, p_id) );
+    }
+
+    // sort scores
+    std::sort(scores.begin(), scores.end());
+
+    // create the result
+    std::vector<PlanetPtr> result;
+    std::pair<int,int> s;
+    foreach ( s, scores ) {
+        result.push_back(state.Planet(s.second));
+    }
+
+    return result;
 }
