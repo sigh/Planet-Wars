@@ -67,6 +67,16 @@ int GameState::Production(Player player) const {
     return production;
 }
 
+int GameState::FutureProduction(Player player) const {
+    int production = 0;
+    foreach ( const PlanetPtr& p, planets_ )  {
+        if ( p->FutureOwner() == player ) { 
+            production += p->GrowthRate();
+        }
+    }
+    return production;
+}
+
 int GameState::Ships(Player player) const {
     int ships = 0;
     foreach ( const PlanetPtr& p, planets_ )  {

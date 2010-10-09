@@ -46,6 +46,7 @@ class GameState {
 
         // The total growth of all planets owned by a player
         int Production(Player player) const;
+        int FutureProduction(Player player) const;
 
         // Determine the closest planet to the given planet owned by player
         // Return a NULL pointer if not found

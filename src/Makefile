@@ -15,6 +15,9 @@ clean:
 MyBot: $(OBJECTS)
 		$(CC) $(CFLAGS) $(LIBS) $(OBJECTS) -o  MyBot
 
+DoTurn.o: DoTurn.cpp strategy/attack.cpp strategy/defence.cpp strategy/redist.cpp
+		$(CC) $(CFLAGS) -c $<
+
 %.o: %.cpp
 		$(CC) $(CFLAGS) -c $<
 
