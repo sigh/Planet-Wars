@@ -154,6 +154,7 @@ int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int avai
             }
 
             int score_cost = cost + state.ShipsWithinRange(dest,distance,ENEMY); 
+            if ( dest->Owner() == ENEMY ) cost = score_cost;
 
             // TODO: determine the best factor for distance
             score = (int)((double)score_cost/growth_rate/growth_scale + delay/delay_scale + distance*distance_scale);
@@ -180,6 +181,7 @@ int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int avai
             // TODO: Another magic param 
             int cost = dest->Cost( arrive ); 
             int score_cost = cost + state.ShipsWithinRange(dest,distance, ENEMY); 
+            if ( dest->Owner() == ENEMY ) cost = score_cost;
 
             // int score = arrive + arrive/2;
             int score = (int)((double)score_cost/growth_rate/growth_scale + delay/delay_scale + (arrive-delay)*distance_scale);
@@ -368,7 +370,7 @@ void CombinationAttack(GameState& state, const DefenceExclusions& defence_exclus
 int EvalState( const GameState& state ) { 
     int score = 0;
     foreach ( const PlanetPtr& p, state.Planets() ) {
-        PlanetState s = p->FutureState(100);
+        PlanetState s = p->FutureState(50);
         score += s.owner * s.ships;
     }
      return score;
