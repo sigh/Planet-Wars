@@ -19,6 +19,7 @@ Front2 bot/Front2
 RedistD bot/RedistD
 Config bot/Config # first bot with a config
 Config2 bot/Config2
+Combin bot/Combin
 # *Dual java -jar example_bots/DualBot.jar
 #*Rage java -jar example_bots/RageBot.jar
 
