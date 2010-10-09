@@ -104,7 +104,7 @@ namespace Config {
         bool_config_["attack"] = 1;
         int_config_["attack.max_delay"] = 0;
         bool_config_["redist"] = 1;
-        bool_config_["redist.future"] = 0;
+        bool_config_["redist.future"] = 1;
         int_config_["redist.slack"] = 0;
         bool_config_["flee"] = 0;
 

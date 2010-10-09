@@ -366,5 +366,10 @@ void CombinationAttack(GameState& state, const DefenceExclusions& defence_exclus
 }
 
 int EvalState( const GameState& state ) { 
-    return state.FutureProduction(ME);
+    int score = 0;
+    foreach ( const PlanetPtr& p, state.Planets() ) {
+        PlanetState s = p->FutureState(100);
+        score += s.owner * s.ships;
+    }
+     return score;
 }
