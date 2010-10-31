@@ -69,7 +69,7 @@ int ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& de
             if ( cost <= available_ships ) break;
 
             const PlanetPtr source = state.Planet(source_id);
-            int source_ships = source->Ships();
+            int source_ships = source->Ships(true);
 
             if ( future_owner == NEUTRAL ) {
                 // Don't attack neutral planets closer to the enemy

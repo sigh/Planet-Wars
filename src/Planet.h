@@ -33,7 +33,7 @@ class Planet {
     Player Owner() const;
 
     // The number of ships on the planet. This is the "population" of the planet.
-    int Ships() const;
+    int Ships(bool locked=false) const;
 
     // The number of ships coming to the planet owned by given player
     int IncomingShips(Player player) const;
