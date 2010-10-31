@@ -108,7 +108,7 @@ int AntiRageRequiredShips(const GameState &state, const PlanetPtr& my_planet, co
 
         int help_distance =  Map::Distance(my_planet->id, i);
         if ( help_distance >= distance ) break;
-        required_ships -= p->Ships() + p->ShipExcess(distance-help_distance-1);
+        required_ships -= p->Ships(true) + p->ShipExcess(distance-help_distance-1);
     }
 
     if ( required_ships <= 0 ) return 0;

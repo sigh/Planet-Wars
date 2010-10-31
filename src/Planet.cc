@@ -23,8 +23,8 @@ Player Planet::Owner() const {
     return owner_;
 }
 
-int Planet::Ships() const {
-    return std::max(num_ships_ - locked_ships_,0);
+int Planet::Ships(bool locked /* = false */) const {
+    return locked ? std::max(num_ships_ - locked_ships_,0) : num_ships_;
 }
 
 int Planet::TotalShips(Player player) const {

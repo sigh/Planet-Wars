@@ -36,7 +36,7 @@ void Redistribution(GameState& state) {
         }
 
         // Filter out planets we don't want to redistribute from
-        if ( locked_planets[p_id] || p->Ships() <= 0 ) {
+        if ( locked_planets[p_id] || p->Ships(true) <= 0 ) {
             continue;
         }
 
@@ -118,7 +118,7 @@ void Redistribution(GameState& state) {
         // This prevents us prematurely sending ships to a planet which we might be neutral stealing from the enemy
         if ( state.Planet( dest_id )->FutureState( Map::Distance( source_id, dest_id ) ).owner == NEUTRAL ) continue;
 
-        state.IssueOrder(Fleet(source_id, dest_id, p->Ships()));
+        state.IssueOrder(Fleet(source_id, dest_id, p->Ships(true)));
         LOG( " Redistributing from " << source_id << " to " << dest_id );
     }
 }
