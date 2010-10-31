@@ -47,13 +47,13 @@ int Planet::IncomingShips(Player player) const {
     return num_ships;
 }
 
-int Planet::WeightedIncoming(unsigned int days) const {
+int Planet::WeightedIncoming(Player player, unsigned int days) const {
     int ships = 0;
     if ( days > incoming_fleets_.size() ) {
         days = incoming_fleets_.size();
     }
     for ( unsigned int i=0; i < days; ++i ) {
-        ships += incoming_fleets_[i].delta(ME);
+        ships += incoming_fleets_[i].delta(player);
     }
     return ships;
 }
@@ -83,19 +83,11 @@ void Planet::AddIncomingFleet(const Fleet &f) {
 
     incoming_fleets_[arrival][f.owner] += f.ships;
 
-    if ( f.launch < 0 && owner_ == ENEMY && f.owner == ENEMY ) {
-        effective_growth_rate_ += (double)f.ships/f.length();
-    }
-
     update_prediction_ = true;
 }
 
 int Planet::GrowthRate() const {
     return growth_rate_;
-}
-
-int Planet::EffectiveGrowthRate() const {
-    return (int)effective_growth_rate_; 
 }
 
 int Planet::LockShips(int ships) {
@@ -126,17 +118,19 @@ PlanetState Planet::FutureState(unsigned int days) const {
 // TODO: Make this work for any player anytime
 // Currently assumes attacker is playr 1 and
 // Future owner is player 2
-int Planet::Cost( unsigned int days ) const {
+int Planet::Cost( unsigned int days, Player attacker ) const {
+    Player defender = -attacker;
+
     if ( days >= prediction_.size() ) {
         PlanetState state = FutureState(days);
-        return state.owner == ME ? 0 : state.ships + 1;
+        return state.owner == attacker ? 0 : state.ships + 1;
     }
 
     int ships_delta = 0;
     int required_ships = 0;
     int prev_owner = days == 0 ? owner_ : prediction_[days-1].owner;
 
-    if ( prediction_[days].owner == ME )  {
+    if ( prediction_[days].owner == attacker )  {
         ships_delta = prediction_[days].ships;
     }
     else if ( prediction_[days].owner == NEUTRAL ) {
@@ -144,16 +138,16 @@ int Planet::Cost( unsigned int days ) const {
         required_ships = prediction_[days].ships + 1;
 
         const FleetSummary &f = incoming_fleets_[days];
-        if ( f[ME] < f[ENEMY] ) {
+        if ( f[attacker] < f[defender] ) {
             // If there is another attacking force (larger than us)
             // we need to overcome that one too
-            required_ships += f.delta(ENEMY);
+            required_ships += f.delta(defender);
         }
     }
     else if ( prev_owner == NEUTRAL ) {
         // opponent just took neutral with this move
         const FleetSummary &f = incoming_fleets_[days];
-        required_ships = f.delta(ENEMY) + 1;
+        required_ships = f.delta(defender) + 1;
     }
     else {
         required_ships = prediction_[days].ships + 1;
@@ -162,7 +156,7 @@ int Planet::Cost( unsigned int days ) const {
     // TODO: Merge with required ships
     for ( unsigned int i = days+1; i < incoming_fleets_.size(); ++i ) {
         const FleetSummary &f = incoming_fleets_[i];
-        ships_delta += growth_rate_ + f.delta(ME);
+        ships_delta += growth_rate_ + f.delta(attacker);
         if ( ships_delta < 0 ) {
             required_ships += -ships_delta;
             ships_delta = 0; 
@@ -246,15 +240,14 @@ void Planet::UpdatePrediction() const {
     update_prediction_ = false;
 }
 
-// number of ships required by player ME to keep this planet
-// TODO: Make it work with any owner
+// number of ships required by current owner to keep this planet
 int Planet::RequiredShips() const {
     int ships_delta = 0;
     int required_ships = 0;
 
     for ( unsigned int day=1; day < incoming_fleets_.size(); ++day ) {
         const FleetSummary &f = incoming_fleets_[day];
-        ships_delta += growth_rate_ + f.delta(ME);
+        ships_delta += growth_rate_ + f.delta(owner_);
         if ( ships_delta < 0 ) {
             required_ships += -ships_delta;
             ships_delta = 0; 
@@ -264,6 +257,7 @@ int Planet::RequiredShips() const {
     return required_ships;
 }
 
+// number of extra ships available to the current owner of this planet
 int Planet::ShipExcess(unsigned int days) const {
     int ships_delta = 0;
     int required_ships = 0;
@@ -271,7 +265,7 @@ int Planet::ShipExcess(unsigned int days) const {
     unsigned int day = 1;
     for ( ; day < incoming_fleets_.size() && day < days; ++day ) {
         const FleetSummary &f = incoming_fleets_[day];
-        ships_delta += growth_rate_ + f.delta(ME);
+        ships_delta += growth_rate_ + f.delta(owner_);
         if ( ships_delta < 0 ) {
             required_ships += -ships_delta;
             ships_delta = 0; 

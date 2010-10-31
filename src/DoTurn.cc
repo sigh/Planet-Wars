@@ -9,8 +9,8 @@
 #include "strategy/defence.h"
 #include "strategy/redist.h"
 
-void DoTurn(const GameState& initial_state, std::vector<Fleet>& orders) {
-    int my_planet_count = initial_state.PlanetsOwnedBy(ME).size();
+void DoTurn(const GameState& initial_state, std::vector<Fleet>& orders, Player player /* = ME */) {
+    int my_planet_count = initial_state.PlanetsOwnedBy(player).size();
     if ( my_planet_count == 0 ) {
         LOG("We have no planets, we can make no actions");
         return;
@@ -19,7 +19,7 @@ void DoTurn(const GameState& initial_state, std::vector<Fleet>& orders) {
     // Create a mutable version of the state
     GameState state = initial_state;
 
-    Defence(state);
+    Defence(state, player);
 
     DefenceExclusions defence_exclusions = AntiRage(state);
 

@@ -5,7 +5,7 @@
 
 typedef std::map<int, std::pair<int,int> > DefenceExclusions;
 
-void Defence(GameState& state);
+void Defence(GameState& state, Player player);
 DefenceExclusions AntiRage(GameState& state);
 
 #endif
