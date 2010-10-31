@@ -8,13 +8,13 @@
 int AntiRageRequiredShips(const GameState &state, const PlanetPtr& my_planet, const PlanetPtr& enemy_planet);
 
 // Lock the required number of ships onto planets that are under attack
-void Defence(GameState& state) {
+void Defence(GameState& state, Player player) {
     static bool defence = Config::Value<bool>("defence"); 
     if ( ! defence ) return;
 
     LOG("Defence phase");
 
-    std::vector<PlanetPtr> my_planets = state.PlanetsOwnedBy(ME);
+    std::vector<PlanetPtr> my_planets = state.PlanetsOwnedBy(player);
     foreach ( PlanetPtr& p, my_planets ) {
         // TODO: IF this is an important planet then we must protect
         // Else we can run away if AFTER all order have been issued we are still 

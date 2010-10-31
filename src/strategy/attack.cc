@@ -128,7 +128,6 @@ int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int avai
     static double growth_scale   = Config::Value<double>("cost.growth_scale");
     static double delay_scale    = Config::Value<double>("cost.delay_scale");
     static int    cost_offset    = Config::Value<int>("cost.offset");
-    static bool   use_egr        = Config::Value<bool>("cost.use_egr");
 
     int source_id = source->id;
     int dest_id = dest->id;
@@ -148,10 +147,6 @@ int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int avai
         cost = prediction.ships;
 
         if ( future_owner ) {
-            if ( use_egr ) {
-                PlanetState future_state = dest->FutureState(future_days);
-                cost = future_state.ships + ( distance - future_days ) * dest->EffectiveGrowthRate();
-            }
 
             int score_cost = cost + state.ShipsWithinRange(dest,distance,ENEMY); 
             if ( dest->Owner() == ENEMY ) cost = score_cost;
@@ -179,7 +174,7 @@ int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int avai
         // determine the best day to arrive on, we search up to 12 day AFTER the last fleet arrives
         for ( int arrive = future_days+1; arrive >= distance + delay; --arrive ) {
             // TODO: Another magic param 
-            int cost = dest->Cost( arrive ); 
+            int cost = dest->Cost( arrive, ME ); 
             int score_cost = cost + state.ShipsWithinRange(dest,distance, ENEMY); 
             if ( dest->Owner() == ENEMY ) cost = score_cost;
 

@@ -51,15 +51,14 @@ class Planet {
     int LockShips( int ships );
     PlanetState FutureState(unsigned int days) const;
     int FutureOwner() const;
-    int Cost( unsigned int days ) const;
+    int Cost( unsigned int days, Player attacker ) const;
     int FutureDays() const;
-    int WeightedIncoming(unsigned int days=INF) const;
+    int WeightedIncoming(Player player, unsigned int days=INF) const;
 
     int RequiredShips() const;
     int ShipExcess(unsigned int days) const;
 
     int GrowthRate() const;
-    int EffectiveGrowthRate() const;
 
     PlanetPtr Clone() const;
 
