@@ -8,15 +8,15 @@
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 
-int ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions);
-int ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Fleet>& orders);
+void ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions);
+void ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Fleet>& orders);
 int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Fleet>& orders);
 std::vector<PlanetPtr> FindTargets(const GameState& state, const DefenceExclusions& defence_exclusions);
 void GreedyAttack(GameState& state, const DefenceExclusions& defence_exclusions, std::vector<PlanetPtr>& targets);
 void CombinationAttack(GameState& state, const DefenceExclusions& defence_exclusions, std::vector<PlanetPtr>& targets, unsigned int=0);
 int EvalState( const GameState& state );
 
-void Attack(GameState& state, DefenceExclusions& defence_exclusions) {
+void Attack(GameState& state, DefenceExclusions& defence_exclusions, Player player) {
     static bool attack = Config::Value<bool>("attack");
     if ( ! attack  ) return;
 
@@ -24,33 +24,32 @@ void Attack(GameState& state, DefenceExclusions& defence_exclusions) {
 
     std::vector<PlanetPtr> targets = FindTargets(state, defence_exclusions);
 
-    // GreedyAttack(state, defence_exclusions, targets);
     CombinationAttack(state, defence_exclusions, targets);
 }
 
-int ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions) {
+void ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions, Player player) {
     std::vector<Fleet> orders;
-    return ScorePlanet(state, p, defence_exclusions, orders);
+    return ScorePlanet(state, p, defence_exclusions, orders, player);
 }
 
 // Does a cost analysis for taking over planet p and populates orders with the orders required
 // to do so.
 // Returns score
-int ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Fleet>& orders) {
+void ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Fleet>& orders, Player player) {
     static int max_delay = Config::Value<int>("attack.max_delay");
     int p_id = p->id;
 
-    // sort MY planets in order of distance the target planet
+    // sort player planets in order of distance the target planet
     const std::vector<int>& all_sorted = Map::PlanetsByDistance( p_id );
     std::vector<int> my_sorted;
     foreach ( int source_id, all_sorted ) {
-        if ( state.Planet(source_id)->Owner() == ME ) {
+        if ( state.Planet(source_id)->Owner() == player ) {
             my_sorted.push_back( source_id );
         }
     }
 
     // determine distance to closest enemy
-    PlanetPtr closest_enemy = state.ClosestPlanetByOwner( p, ENEMY );
+    PlanetPtr closest_enemy = state.ClosestPlanetByOwner( p, -player );
     int closest_enemy_distance = closest_enemy ? Map::Distance(closest_enemy->id, p_id) : INF;
     int future_owner = p->FutureOwner();
 
@@ -118,8 +117,6 @@ int ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& de
     else {
         LOG( "  not enough ships to attack " << p_id );
     }
-
-    return best_score;
 }
 
 // Score one source -> dest fleet
@@ -278,45 +275,7 @@ std::vector<PlanetPtr> FindTargets(const GameState& state, const DefenceExclusio
     return result;
 }
 
-void GreedyAttack(GameState& state, const DefenceExclusions& defence_exclusions, std::vector<PlanetPtr>& targets) {
-    LOG(" Starting attacks (greedy)");
-
-    // start attacking planets based on score
-    foreach ( PlanetPtr p, targets ) {
-        // list of the orders that we will want to execute
-        std::vector<Fleet> orders;
-
-        ScorePlanet(state, p, defence_exclusions, orders);
-
-        if ( orders.empty() ) {
-            // This case happens when cost > available_ships
-
-            // If we don't have enough ships to capture the next best planet then WAIT
-            //  This serves a few purposes:
-            //  1. Prevent us overextending our forces
-            //  2. If we wait we might get the required resources later
-            //  3. This helps against Rage tactics
-            // Harass(state, p->id, orders);
-            break;
-        }
-
-        // update delays so all fleet arrive at once
-        // TODO: Try leaving this out (Might harm neutral attack/overtakes)
-        const Fleet& last_order = orders.back();
-        int last_arrival = last_order.launch + Map::Distance( last_order.source, last_order.dest );
-        foreach ( Fleet& order, orders ) {
-            order.launch = last_arrival - Map::Distance( order.source, order.dest );
-        }
-
-        // If we reached here we want to actually execute the orders
-        foreach ( Fleet& order, orders ) {
-            state.IssueOrder(order);
-        }
-        
-    }
-}
-
-void CombinationAttack(GameState& state, const DefenceExclusions& defence_exclusions, std::vector<PlanetPtr>& targets, unsigned int i) {
+void CombinationAttack(GameState& state, const DefenceExclusions& defence_exclusions, std::vector<PlanetPtr>& targets, Player player, unsigned int i) {
     if ( i == 0 ) {
         LOG(" Starting attacks (combination)");
     }
@@ -329,7 +288,7 @@ void CombinationAttack(GameState& state, const DefenceExclusions& defence_exclus
 
     // Try attacking targets[i]
     std::vector<Fleet> orders;
-    ScorePlanet(attack_state, targets[i], defence_exclusions, orders);
+    AttackPlanet(attack_state, targets[i], defence_exclusions, orders, player);
     if ( ! orders.empty() ) {
         // update delays so all fleet arrive at once
         // TODO: Try leaving this out (Might harm neutral attack/overtakes)
@@ -344,29 +303,29 @@ void CombinationAttack(GameState& state, const DefenceExclusions& defence_exclus
             attack_state.IssueOrder(order);
         }
 
-        CombinationAttack(attack_state, defence_exclusions, targets, i+1);
+        CombinationAttack(attack_state, defence_exclusions, targets, player, i+1);
     }
 
     // Try not attacking targets[i]
-    CombinationAttack(state, defence_exclusions, targets, i+1);
+    CombinationAttack(state, defence_exclusions, targets, player, i+1);
 
     if ( orders.empty() ) {
         // only one state, no need to compare
         return;
     }
 
-    LOG( "  " << i << ": attack_state " << EvalState(attack_state) << ", state " << EvalState(state) );
+    LOG( "  " << i << ": attack_state " << EvalState(attack_state, player) << ", state " << EvalState(state, player) );
     // update with most valuable state
-    if ( EvalState( attack_state ) > EvalState( state ) ) {
+    if ( EvalState( attack_state, player) > EvalState(state, player) ) {
         state = attack_state;
     }
 }
 
-int EvalState( const GameState& state ) { 
+int EvalState( const GameState& state, player ) { 
     int score = 0;
     foreach ( const PlanetPtr& p, state.Planets() ) {
         PlanetState s = p->FutureState(50);
         score += s.owner * s.ships;
     }
-     return score;
+    return score*player;
 }
