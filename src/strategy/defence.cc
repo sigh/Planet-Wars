@@ -32,7 +32,7 @@ void Defence(GameState& state, Player player) {
     }
 }
 
-DefenceExclusions AntiRage(GameState& state) {
+DefenceExclusions AntiRage(GameState& state, Player player) {
     DefenceExclusions defence_exclusions; 
 
     // Anti rge level
@@ -46,7 +46,7 @@ DefenceExclusions AntiRage(GameState& state) {
 
     LOG("Antirage phase");
 
-    std::map<int,bool> frontier_planets = state.FrontierPlanets(ME);
+    std::map<int,bool> frontier_planets = state.FrontierPlanets(player);
     std::pair<int,bool> item;
     foreach ( item, frontier_planets ) {
         if ( ! item.second ) continue;
@@ -60,7 +60,7 @@ DefenceExclusions AntiRage(GameState& state) {
 
         if ( anti_rage_level == 1 ) {
             // defend against only the closest enemy
-            PlanetPtr closest_enemy = state.ClosestPlanetByOwner(p, ENEMY);
+            PlanetPtr closest_enemy = state.ClosestPlanetByOwner(p, -player);
             if ( closest_enemy ) {
                 ships_locked = AntiRageRequiredShips(state, p, closest_enemy );
                 rage_planet = closest_enemy;
@@ -70,7 +70,7 @@ DefenceExclusions AntiRage(GameState& state) {
             // defend against all enemies
             int max_required_ships = 0;
             int sum_required_ships = 0;
-            std::vector<PlanetPtr> enemy_planets = state.PlanetsOwnedBy(ENEMY);
+            std::vector<PlanetPtr> enemy_planets = state.PlanetsOwnedBy(-player);
             foreach ( PlanetPtr& enemy_planet, enemy_planets ) {
                 int required_ships = AntiRageRequiredShips(state, p, enemy_planet );
                 if ( required_ships > max_required_ships ) {
@@ -100,11 +100,13 @@ int AntiRageRequiredShips(const GameState &state, const PlanetPtr& my_planet, co
     int required_ships = enemy_planet->Ships() - distance*my_planet->GrowthRate();
     if ( required_ships <= 0 ) return 0;
 
+    Player player = enemy_planet->Owner();
+
     // enslist help
     const std::vector<int>& sorted = Map::PlanetsByDistance( my_planet->id );
     foreach ( int i, sorted ) {
         const PlanetPtr p = state.Planet(i);
-        if ( p->Owner() != ME ) continue;
+        if ( p->Owner() != player ) continue;
 
         int help_distance =  Map::Distance(my_planet->id, i);
         if ( help_distance >= distance ) break;
