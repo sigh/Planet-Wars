@@ -10,7 +10,7 @@
 
 int AttackPlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions, Player player);
 int AttackPlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Fleet>& orders, Player player);
-int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Fleet>& orders);
+int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int& cost, std::vector<Fleet>& orders, Player player);
 std::vector<PlanetPtr> FindTargets(const GameState& state, const DefenceExclusions& defence_exclusions, Player player);
 void GreedyAttack(GameState& state, const DefenceExclusions& defence_exclusions, std::vector<PlanetPtr>& targets);
 void CombinationAttack(GameState& state, const DefenceExclusions& defence_exclusions, std::vector<PlanetPtr>& targets, Player player, unsigned int=0);
@@ -85,7 +85,7 @@ int AttackPlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& d
         
         available_ships += source_ships;
 
-        score = ScoreEdge(state, p, source, available_ships, source_ships, 0, cost, orders);
+        score = ScoreEdge(state, p, source, available_ships, source_ships, cost, orders, player);
     }
 
     // If the cost is too large then we can generate no orders
@@ -104,10 +104,9 @@ int AttackPlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& d
 }
 
 // Score one source -> dest fleet
-int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Fleet>& orders) {
+int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int& cost, std::vector<Fleet>& orders, Player player) {
     static double distance_scale = Config::Value<double>("cost.distance_scale");
     static double growth_scale   = Config::Value<double>("cost.growth_scale");
-    static double delay_scale    = Config::Value<double>("cost.delay_scale");
     static int    cost_offset    = Config::Value<int>("cost.offset");
 
     int source_id = source->id;
@@ -122,18 +121,18 @@ int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int avai
     int score = INF;
     int extra_delay = 0;
 
-    if ( delay + distance > future_days ) {
+    if ( distance > future_days ) {
         // easy case: we arrive after all the other fleets
-        PlanetState prediction = dest->FutureState( distance + delay );
+        PlanetState prediction = dest->FutureState( distance );
         cost = prediction.ships;
 
         if ( future_owner ) {
 
-            int score_cost = cost + state.ShipsWithinRange(dest,distance,ENEMY); 
-            if ( dest->Owner() == ENEMY ) cost = score_cost;
+            int score_cost = cost + state.ShipsWithinRange(dest,distance,-player); 
+            if ( dest->Owner() == -player ) cost = score_cost;
 
             // TODO: determine the best factor for distance
-            score = (int)((double)score_cost/growth_rate/growth_scale + delay/delay_scale + distance*distance_scale);
+            score = (int)((double)score_cost/growth_rate/growth_scale + distance*distance_scale);
             // score = distance + distance/2;
             LOG( "  to attack " << dest_id << " from " << source_id << ": cost = " << cost << ", score_cost = " << score_cost << ", score = " << score );
         }
@@ -141,8 +140,8 @@ int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int avai
             // For a neutral planet:
             //   the number of days to travel to the planet
             //   + time to regain units spent
-            int score_cost = cost + state.ShipsWithinRange(dest,distance,ENEMY); 
-            score = ceil((double)score_cost/growth_rate) + delay/delay_scale + distance;
+            int score_cost = cost + state.ShipsWithinRange(dest,distance,-player); 
+            score = ceil((double)score_cost/growth_rate) + distance;
         }
     }
     else {
@@ -153,17 +152,17 @@ int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int avai
         int best_cost = 0;
 
         // determine the best day to arrive on, we search up to 12 day AFTER the last fleet arrives
-        for ( int arrive = future_days+1; arrive >= distance + delay; --arrive ) {
+        for ( int arrive = future_days+1; arrive >= distance; --arrive ) {
             // TODO: Another magic param 
             int cost = dest->Cost( arrive, ME ); 
-            int score_cost = cost + state.ShipsWithinRange(dest,distance, ENEMY); 
-            if ( dest->Owner() == ENEMY ) cost = score_cost;
+            int score_cost = cost + state.ShipsWithinRange(dest,distance, -player); 
+            if ( dest->Owner() == -player ) cost = score_cost;
 
             // int score = arrive + arrive/2;
-            int score = (int)((double)score_cost/growth_rate/growth_scale + delay/delay_scale + (arrive-delay)*distance_scale);
+            int score = (int)((double)score_cost/growth_rate/growth_scale + arrive*distance_scale);
             if ( score < best_score ) {
                 best_score = score;
-                extra_delay = arrive - distance - delay;
+                extra_delay = arrive - distance;
                 best_cost = cost;
             }
         }
@@ -190,7 +189,7 @@ int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int avai
         LOG_ERROR( "WTF: attacking " << dest_id << ": " << cost << " " << available_ships << " " << source_ships );
     }
 
-    orders.push_back( Fleet(ME, source_id, dest_id, required_ships, delay + extra_delay) ); 
+    orders.push_back( Fleet(ME, source_id, dest_id, required_ships, extra_delay) ); 
 
     return score;
 }
