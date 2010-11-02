@@ -58,3 +58,7 @@ My bot is STUPID with neutrals:
         - Choose max enemy distance
         - Find all planets within distance
         - Check owner in (distance) turns
+
+Why attack 1 turn too early:
+http://www.ai-contest.com/visualizer.php?game_id=5661748
+move 53 88-ships neutral
