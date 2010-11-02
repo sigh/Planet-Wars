@@ -85,7 +85,7 @@ DefenceExclusions AntiRage(GameState& state, Player player) {
 
         if ( ships_locked > 0 ) {
             ships_locked = p->LockShips(ships_locked);
-            if ( anti_rage_level != 3 && have_defence_exclusions ) {
+            if (  have_defence_exclusions ) {
                 defence_exclusions[p->id] = std::pair<int,int>(rage_planet->id, ships_locked);
             }
             LOG( " Locking " << ships_locked << " ships on planet " << p->id );
