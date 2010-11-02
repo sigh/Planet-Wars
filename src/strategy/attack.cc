@@ -8,13 +8,13 @@
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 
-void ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions);
-void ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Fleet>& orders);
+int AttackPlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions, Player player);
+int AttackPlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Fleet>& orders, Player player);
 int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int available_ships, int source_ships, int delay, int& cost, std::vector<Fleet>& orders);
-std::vector<PlanetPtr> FindTargets(const GameState& state, const DefenceExclusions& defence_exclusions);
+std::vector<PlanetPtr> FindTargets(const GameState& state, const DefenceExclusions& defence_exclusions, Player player);
 void GreedyAttack(GameState& state, const DefenceExclusions& defence_exclusions, std::vector<PlanetPtr>& targets);
-void CombinationAttack(GameState& state, const DefenceExclusions& defence_exclusions, std::vector<PlanetPtr>& targets, unsigned int=0);
-int EvalState( const GameState& state );
+void CombinationAttack(GameState& state, const DefenceExclusions& defence_exclusions, std::vector<PlanetPtr>& targets, Player player, unsigned int=0);
+int EvalState( const GameState& state, Player player );
 
 void Attack(GameState& state, DefenceExclusions& defence_exclusions, Player player) {
     static bool attack = Config::Value<bool>("attack");
@@ -22,21 +22,20 @@ void Attack(GameState& state, DefenceExclusions& defence_exclusions, Player play
 
     LOG("Attack phase");
 
-    std::vector<PlanetPtr> targets = FindTargets(state, defence_exclusions);
+    std::vector<PlanetPtr> targets = FindTargets(state, defence_exclusions, player);
 
-    CombinationAttack(state, defence_exclusions, targets);
+    CombinationAttack(state, defence_exclusions, targets, player);
 }
 
-void ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions, Player player) {
+int AttackPlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions, Player player) {
     std::vector<Fleet> orders;
-    return ScorePlanet(state, p, defence_exclusions, orders, player);
+    return AttackPlanet(state, p, defence_exclusions, orders, player);
 }
 
 // Does a cost analysis for taking over planet p and populates orders with the orders required
 // to do so.
 // Returns score
-void ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Fleet>& orders, Player player) {
-    static int max_delay = Config::Value<int>("attack.max_delay");
+int AttackPlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& defence_exclusions, std::vector<Fleet>& orders, Player player) {
     int p_id = p->id;
 
     // sort player planets in order of distance the target planet
@@ -53,70 +52,55 @@ void ScorePlanet(const GameState& state, PlanetPtr p, const DefenceExclusions& d
     int closest_enemy_distance = closest_enemy ? Map::Distance(closest_enemy->id, p_id) : INF;
     int future_owner = p->FutureOwner();
 
-    // Determine best case 
-    int best_score = INF;
-    int best_cost = INF;
-    std::vector<Fleet> best_orders;
+    int score = INF;
+    int cost = INF;
 
-    for ( int delay=0; delay <= max_delay; ++delay ) {
-        int score = INF;
-        int cost = INF;
-        std::vector<Fleet> current_orders;
+    int available_ships = 0;
+    foreach ( int source_id, my_sorted ) {
+        if ( cost <= available_ships ) break;
 
-        int available_ships = 0;
-        foreach ( int source_id, my_sorted ) {
-            if ( cost <= available_ships ) break;
+        const PlanetPtr source = state.Planet(source_id);
+        int source_ships = source->Ships(true);
 
-            const PlanetPtr source = state.Planet(source_id);
-            int source_ships = source->Ships(true);
-
-            if ( future_owner == NEUTRAL ) {
-                // Don't attack neutral planets closer to the enemy
-                int distance = Map::Distance( source_id, p_id );
-                // if ( closest_enemy_distance <= distance && p->FutureDays() < distance ) {
-                if ( closest_enemy_distance <= distance ) {
-                    // We do not want this move to be considered AT ALL
-                    // So give it the highest score
-                    cost = INF;
-                    score = INF;
-                    break;
-                }
+        if ( future_owner == NEUTRAL ) {
+            // Don't attack neutral planets closer to the enemy
+            int distance = Map::Distance( source_id, p_id );
+            // if ( closest_enemy_distance <= distance && p->FutureDays() < distance ) {
+            if ( closest_enemy_distance <= distance ) {
+                // We do not want this move to be considered AT ALL
+                // So give it the highest score
+                cost = INF;
+                score = INF;
+                break;
             }
-
-            // determine if we have any ship locking exclusion for this 
-            //   source/dest pair
-            DefenceExclusions::const_iterator d_it = defence_exclusions.find(source_id);
-            if ( d_it != defence_exclusions.end() && d_it->second.first == p_id ) {
-                LOG( " Lifting defence exclusion for " << d_it->second.second << " ships on planet " << source_id );
-                source_ships += d_it->second.second;
-                available_ships += delay*Map::GrowthRate(source_id);
-            }
-            
-            available_ships += source_ships;
-
-            score = ScoreEdge(state, p, source, available_ships, source_ships, delay, cost, current_orders);
         }
 
-        // If the cost is too large then we can generate no orders
-        if ( cost > available_ships ) {
-            current_orders.clear();
+        // determine if we have any ship locking exclusion for this 
+        //   source/dest pair
+        DefenceExclusions::const_iterator d_it = defence_exclusions.find(source_id);
+        if ( d_it != defence_exclusions.end() && d_it->second.first == p_id ) {
+            LOG( " Lifting defence exclusion for " << d_it->second.second << " ships on planet " << source_id );
+            source_ships += d_it->second.second;
         }
+        
+        available_ships += source_ships;
 
-        if ( score < best_score ) {
-            best_score = score;
-            best_cost = cost;
-            best_orders = current_orders;
-        }
+        score = ScoreEdge(state, p, source, available_ships, source_ships, 0, cost, orders);
     }
 
-    orders.insert(orders.end(), best_orders.begin(), best_orders.end());
+    // If the cost is too large then we can generate no orders
+    if ( cost > available_ships ) {
+        orders.clear();
+    }
 
     if ( orders.size() > 0 ) {
-        LOG( "  score of planet " << p_id << " = " << best_score << " (" <<  best_cost << ") after " << orders.back().launch << " days" );
+        LOG( "  score of planet " << p_id << " = " << score << " (" <<  cost << ") after " << orders.back().launch << " days" );
     }
     else {
         LOG( "  not enough ships to attack " << p_id );
     }
+
+    return score;
 }
 
 // Score one source -> dest fleet
@@ -212,14 +196,14 @@ int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int avai
 }
 
 // Find potential targets in order of score
-std::vector<PlanetPtr> FindTargets(const GameState& state, const DefenceExclusions& defence_exclusions) {
+std::vector<PlanetPtr> FindTargets(const GameState& state, const DefenceExclusions& defence_exclusions, Player player) {
     LOG(" Finding targets");
 
     std::vector<PlanetPtr> planets = state.Planets();
     std::vector< std::pair<int,int> > scores;
 
-    std::map<int,bool> targets_1 = state.FrontierPlanets(ENEMY); 
-    std::map<int,bool> targets_2 = state.FutureFrontierPlanets(ENEMY); 
+    std::map<int,bool> targets_1 = state.FrontierPlanets(-player); 
+    std::map<int,bool> targets_2 = state.FutureFrontierPlanets(-player); 
     for (unsigned int p_id=0; p_id<planets.size(); ++p_id) {
         const PlanetPtr p = planets[p_id];
         int growth_rate = Map::GrowthRate(p_id);
@@ -233,15 +217,15 @@ std::vector<PlanetPtr> FindTargets(const GameState& state, const DefenceExclusio
 
         // Don't need to do anything if we will own the planet
         int future_owner = p->FutureOwner();
-        if ( future_owner == ME) {
+        if ( future_owner == player) {
             continue;
         }
 
         // If a neutral planet is closer to an enemy then ignore it
         if ( future_owner == NEUTRAL ) {
 
-            PlanetPtr closest_enemy = state.ClosestPlanetByOwner( p, ENEMY );
-            PlanetPtr closest_me = state.ClosestPlanetByOwner( p, ME );
+            PlanetPtr closest_enemy = state.ClosestPlanetByOwner( p, -player );
+            PlanetPtr closest_me = state.ClosestPlanetByOwner( p, player );
 
             if ( closest_enemy && closest_me && Map::Distance( closest_enemy->id, p_id ) <= Map::Distance( closest_me->id, p_id) ) {
                 continue;
@@ -249,16 +233,16 @@ std::vector<PlanetPtr> FindTargets(const GameState& state, const DefenceExclusio
         }
 
         // If the planet is owned by an enemy and it is NOT a frontier planet then ignore
-        if ( p->Owner() == ENEMY && ! ( targets_1[p_id] || targets_2[p_id] ) ) {
+        if ( p->Owner() == -player && ! ( targets_1[p_id] || targets_2[p_id] ) ) {
             continue;
         }
 
         // Don't try to neutral steal planets that we would not otherwise attack
-        if ( future_owner == ENEMY && p->Owner() == NEUTRAL && ! targets_2[p_id] ) {
+        if ( future_owner == -player && p->Owner() == NEUTRAL && ! targets_2[p_id] ) {
             continue;
         }
 
-        int score = ScorePlanet(state, p, defence_exclusions);
+        int score = AttackPlanet(state, p, defence_exclusions, player);
         scores.push_back( std::pair<int,int>(score, p_id) );
     }
 
@@ -321,7 +305,7 @@ void CombinationAttack(GameState& state, const DefenceExclusions& defence_exclus
     }
 }
 
-int EvalState( const GameState& state, player ) { 
+int EvalState( const GameState& state, Player player ) { 
     int score = 0;
     foreach ( const PlanetPtr& p, state.Planets() ) {
         PlanetState s = p->FutureState(50);

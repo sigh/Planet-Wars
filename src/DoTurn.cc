@@ -23,7 +23,7 @@ void DoTurn(const GameState& initial_state, std::vector<Fleet>& orders, Player p
 
     DefenceExclusions defence_exclusions = AntiRage(state, player);
 
-    Attack(state, defence_exclusions);
+    Attack(state, defence_exclusions, player);
 
     Redistribution(state);
 
