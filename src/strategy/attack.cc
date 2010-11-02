@@ -313,12 +313,14 @@ int CombinationAttack(GameState& state, const DefenceExclusions& defence_exclusi
     std::vector<Fleet> orders;
     AttackPlanet(attack_state, targets[i], defence_exclusions, orders, player);
     if ( ! orders.empty() ) {
-        // update delays so all fleet arrive at once
-        // TODO: Try leaving this out (Might harm neutral attack/overtakes)
         const Fleet& last_order = orders.back();
-        int last_arrival = last_order.launch + Map::Distance( last_order.source, last_order.dest );
-        foreach ( Fleet& order, orders ) {
-            order.launch = last_arrival - Map::Distance( order.source, order.dest );
+
+        // update delays so that all fleets arrive at a neutral at the same time
+        if ( state.Planet(last_order.dest)->FutureOwner() == NEUTRAL ) {
+            int last_arrival = last_order.launch + Map::Distance( last_order.source, last_order.dest );
+            foreach ( Fleet& order, orders ) {
+                order.launch = last_arrival - Map::Distance( order.source, order.dest );
+            }
         }
 
         // If we reached here we want to actually execute the orders
