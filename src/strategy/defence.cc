@@ -100,7 +100,7 @@ int AntiRageRequiredShips(const GameState &state, const PlanetPtr& my_planet, co
     int required_ships = enemy_planet->Ships() - distance*my_planet->GrowthRate();
     if ( required_ships <= 0 ) return 0;
 
-    Player player = enemy_planet->Owner();
+    Player player = my_planet->Owner();
 
     // enslist help
     const std::vector<int>& sorted = Map::PlanetsByDistance( my_planet->id );
