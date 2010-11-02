@@ -92,6 +92,8 @@ std::vector<Fleet> GameState::Orders() const {
 void GameState::IssueOrder(const Fleet& order) {
     AddFleet(order);
 
+    if ( order.owner != ME ) return;
+
     // only store order if it is for now
     if ( order.launch == 0 ) {
         orders_.push_back(order);
