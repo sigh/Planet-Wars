@@ -4,6 +4,6 @@
 #include "defence.h"
 #include "../GameState.h"
 
-void Attack(GameState& state, DefenceExclusions& defence_exclusions);
+void Attack(GameState& state, DefenceExclusions& defence_exclusions, Player player);
 
 #endif
