@@ -121,14 +121,16 @@ int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int avai
     int score = INF;
     int extra_delay = 0;
 
+    int ships_within_range = state.ShipsWithinRange(dest, distance, -player);
     if ( distance > future_days ) {
         // easy case: we arrive after all the other fleets
         PlanetState prediction = dest->FutureState( distance );
         cost = prediction.ships;
 
+
         if ( future_owner ) {
 
-            int score_cost = cost + state.ShipsWithinRange(dest,distance,-player); 
+            int score_cost = cost + ships_within_range;
             if ( dest->Owner() == -player ) cost = score_cost;
 
             // TODO: determine the best factor for distance
@@ -140,7 +142,7 @@ int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int avai
             // For a neutral planet:
             //   the number of days to travel to the planet
             //   + time to regain units spent
-            int score_cost = cost + state.ShipsWithinRange(dest,distance,-player); 
+            int score_cost = cost + ships_within_range;
             score = ceil((double)score_cost/growth_rate) + distance;
         }
     }
@@ -151,11 +153,11 @@ int ScoreEdge(const GameState& state, PlanetPtr dest, PlanetPtr source, int avai
         int best_score = INF;
         int best_cost = 0;
 
-        // determine the best day to arrive on, we search up to 12 day AFTER the last fleet arrives
+        // determine the best day to arrive on, we search up to 1 day AFTER the last fleet arrives
         for ( int arrive = future_days+1; arrive >= distance; --arrive ) {
             // TODO: Another magic param 
             int cost = dest->Cost( arrive, player ); 
-            int score_cost = cost + state.ShipsWithinRange(dest,distance, -player); 
+            int score_cost = cost + ships_within_range;
             if ( dest->Owner() == -player ) cost = score_cost;
 
             // int score = arrive + arrive/2;
@@ -307,7 +309,7 @@ int CombinationAttack(GameState& state, const DefenceExclusions& defence_exclusi
 
     GameState attack_state = state;
 
-    int attack_eval = 0;
+    int attack_eval = -INF;
 
     // Try attacking targets[i]
     std::vector<Fleet> orders;
@@ -316,7 +318,7 @@ int CombinationAttack(GameState& state, const DefenceExclusions& defence_exclusi
         const Fleet& last_order = orders.back();
 
         // update delays so that all fleets arrive at a neutral at the same time
-        if ( state.Planet(last_order.dest)->FutureOwner() == NEUTRAL ) {
+        if ( attack_state.Planet(last_order.dest)->FutureOwner() == NEUTRAL ) {
             int last_arrival = last_order.launch + Map::Distance( last_order.source, last_order.dest );
             foreach ( Fleet& order, orders ) {
                 order.launch = last_arrival - Map::Distance( order.source, order.dest );
@@ -332,21 +334,16 @@ int CombinationAttack(GameState& state, const DefenceExclusions& defence_exclusi
     }
 
     // Try not attacking targets[i]
-    int no_attack_eval = CombinationAttack(state, defence_exclusions, targets, player, i+1);
+    int eval = CombinationAttack(state, defence_exclusions, targets, player, i+1);
 
-    if ( orders.empty() ) {
-        // only one state, no need to compare
-        return no_attack_eval;
-    }
-
-    LOG( "  " << i << ": attack_state " << attack_eval << ", state " << no_attack_eval );
+    LOG( "  " << i << ": attack_state " << attack_eval << ", state " << eval );
     // update with most valuable state
-    if ( attack_eval > no_attack_eval ) {
+    if ( attack_eval > eval ) {
         state = attack_state;
-        return attack_eval;
+        eval = attack_eval;
     }
 
-    return no_attack_eval;
+    return eval;
 }
 
 int EvalState( const GameState& state ) { 
