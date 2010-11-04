@@ -62,3 +62,5 @@ My bot is STUPID with neutrals:
 Why attack 1 turn too early:
 http://www.ai-contest.com/visualizer.php?game_id=5661748
 move 53 88-ships neutral
+
+be able to use future state of planets in attack. That is, we should be able to lauch delayed attacks from planets we do not yet own!
